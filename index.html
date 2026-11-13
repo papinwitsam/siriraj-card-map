@@ -225,11 +225,11 @@
         </div>
 
         <!-- รายการการ์ด -->
-        <div id="listScroll" class="p-3">
+        <div id="listScroll" class="p-4 md:px-10">
             <div class="flex items-center justify-between mb-2">
                 <h2 class="font-bold text-slate-700 text-sm sm:text-base inline-block bg-white/85 backdrop-blur px-3 py-1 rounded-full shadow-sm"><i class="fa-solid fa-location-dot text-emerald-600"></i> จุดทาบบัตรทั้งหมด · <span id="resultCount">0</span> จุด</h2>
             </div>
-            <div id="buildingList" class="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3"></div>
+            <div id="buildingList" class="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3"></div>
             <div class="h-6"></div>
         </div>
     </section>
@@ -498,7 +498,7 @@ function renderList(visible) {
         card.dataset.id = item.id;
         card.className = `tap-card bg-white rounded-2xl border border-slate-200 overflow-hidden cursor-pointer hover:border-emerald-300 hover:shadow-md flex flex-col ${selectedId === item.id ? 'selected' : ''}`;
         card.innerHTML = `
-            <div class="relative h-32 bg-slate-100 flex items-center justify-center overflow-hidden">
+            <div class="relative h-28 bg-slate-100 flex items-center justify-center overflow-hidden">
                 ${thumb}
                 <span class="absolute top-2 left-2 min-w-[26px] h-[26px] px-1.5 rounded-lg ${off ? 'bg-red-500' : 'bg-emerald-700'} text-white text-xs font-bold flex items-center justify-center shadow">${esc(item.number)}</span>
             </div>
