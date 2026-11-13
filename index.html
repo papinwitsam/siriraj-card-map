@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>แผนที่ตำแหน่งเครื่องทาบบัตร</title>
+    <title>แผนที่ตำแหน่งเครื่องทาบบัตร | โรงพยาบาลศิริราช</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -11,13 +11,7 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Kanit', 'sans-serif'] },
-                    colors: {
-                        siriraj: {
-                            50: '#f0fdf4', 100: '#dcfce7', 500: '#16a34a',
-                            600: '#15803d', 700: '#15803d', 800: '#166534', navy: '#1e293b'
-                        }
-                    }
+                    fontFamily: { sans: ['Kanit', 'sans-serif'] }
                 }
             }
         }
@@ -27,305 +21,261 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-        @keyframes pulse-ring {
-            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.9; }
-            100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
-        }
+        /* ---------- แผนที่ ---------- */
+        .map-viewport { cursor: grab; user-select: none; touch-action: none; overflow: hidden; }
+        .map-viewport:active { cursor: grabbing; }
+        #mapImage { image-rendering: auto; }
 
+        /* จุดทาบบัตร: ขยาย/ย่อตามการซูมของแผนที่ */
         .hotspot-dot {
             position: absolute;
-            width: 22px;
-            height: 22px;
-            background-color: #226e01;
-            border: 1px solid #dddddd;
+            width: 20px; height: 20px;
+            background-color: #15803d;
+            border: 2px solid #ffffff;
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
-            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            transform: translate(-50%, -50%) scale(var(--inv, 1));
+            transition: background-color .25s, opacity .25s, box-shadow .25s;
             z-index: 20;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 10px;
-            font-weight: bold;
-            pointer-events: auto;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 9px; font-weight: 700; line-height: 1;
             touch-action: manipulation;
         }
-
-        /*.hotspot-dot::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            height: 100%;
-            background-color: #ef4444;
-            border-radius: 50%;
-            animation: pulse-ring 2s infinite;
-            z-index: -1;
-            pointer-events: none;
-        }*/
-
         .hotspot-dot:hover, .hotspot-dot.active {
-            background-color: #226e01;
-            transform: translate(-50%, -50%) scale(1.3);
+            transform: translate(-50%, -50%) scale(calc(var(--inv, 1) * 1.35));
             z-index: 30;
-            //box-shadow: 0 0 12px rgba(239, 68, 68, 0.8), 0 0 0 3px rgba(255, 255, 255, 0.9);
         }
-
-        /* จุดสถานะขัดข้อง (สีเหลือง) */
-        .hotspot-dot.status-warning {
-            background-color: #ef4444 !important;
-            border-color: #ffffff !important;
-            color: #f7df02 !important;
-        }
-
-        .hotspot-dot.status-warning::before {
-            background-color: #ef4444 !important;
-        }
-
-        .hotspot-dot.status-warning:hover, .hotspot-dot.status-warning.active {
-            background-color: #ef4444 !important;
-            color: #ffffff !important;
-            box-shadow: 0 0 12px rgba(234, 179, 8, 0.8), 0 0 0 3px rgba(255, 255, 255, 0.9);
-        }
+        .hotspot-dot.active { box-shadow: 0 0 0 4px rgba(22,163,74,.40), 0 2px 8px rgba(0,0,0,.4); }
+        .hotspot-dot.status-warning { background-color: #ef4444; }
+        .hotspot-dot.status-warning.active { box-shadow: 0 0 0 4px rgba(239,68,68,.40), 0 2px 8px rgba(0,0,0,.4); }
+        .hotspot-dot.dimmed { opacity: .25; }
 
         .hotspot-label {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
+            position: absolute; bottom: 100%; left: 50%;
             transform: translateX(-50%) translateY(-6px);
-            background: rgba(15, 23, 42, 0.9);
-            color: #ffffff;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 500;
-            white-space: nowrap;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s, transform 0.2s;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: rgba(15, 23, 42, 0.92); color: #fff;
+            padding: 3px 8px; border-radius: 6px;
+            font-size: 11px; font-weight: 500; white-space: nowrap;
+            pointer-events: none; opacity: 0;
+            transition: opacity .2s, transform .2s;
         }
-
         .hotspot-dot:hover .hotspot-label, .hotspot-dot.active .hotspot-label {
-            opacity: 1;
-            transform: translateX(-50%) translateY(-10px);
+            opacity: 1; transform: translateX(-50%) translateY(-9px);
         }
 
-        .map-viewport { 
-            cursor: grab; 
-            user-select: none; 
-            touch-action: none;
-            overflow: hidden;
+        /* จุดตำแหน่งของฉัน */
+        .user-dot {
+            position: absolute; width: 16px; height: 16px;
+            background: #2563eb; border: 3px solid #fff; border-radius: 50%;
+            transform: translate(-50%, -50%) scale(var(--inv, 1));
+            box-shadow: 0 2px 8px rgba(37,99,235,.6);
+            z-index: 40; pointer-events: none;
         }
-        .map-viewport:active { cursor: grabbing; }
+        .user-dot::before {
+            content: ''; position: absolute; inset: -3px; border-radius: 50%;
+            background: rgba(37,99,235,.45);
+            animation: user-pulse 1.8s ease-out infinite;
+        }
+        .user-dot span {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            margin-top: 4px; background: #2563eb; color: #fff;
+            font-size: 10px; padding: 1px 6px; border-radius: 6px; white-space: nowrap;
+        }
+        @keyframes user-pulse { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3); opacity: 0; } }
+
+        /* ---------- การ์ดรายการ ---------- */
+        .tap-card { transition: box-shadow .2s, border-color .2s, background-color .2s; }
+        .tap-card.selected { border-color: #16a34a; background-color: #f0fdf4; box-shadow: 0 0 0 2px rgba(22,163,74,.25); }
+        .chip-active { background-color: #15803d !important; color: #fff !important; border-color: #15803d !important; }
+
         .modal-backdrop { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); }
 
-        /* บังคับขยายขนาด Header และ คำอธิบาย บนหน้าจอมือถือ */
-          @media (max-width: 640px) {
-              /* ขยายความสูงและตัวหนังสือ Header */
-              header {
-                  padding: 12px 16px !important;
-              }
-              header h1 {
-                  font-size: 16px !important; /* ขยายชื่อระบบ */
-              }
-              header button, header div.w-10 {
-                  width: 44px !important;   /* ขยายปุ่มแฮมเบอร์เกอร์และไอคอน */
-                  height: 44px !important;
-              }
-              header a {
-                  font-size: 14px !important; /* ขยายปุ่มขวาบน */
-                  padding: 8px 12px !important;
-              }
+        #toast { transition: opacity .3s, transform .3s; }
 
-              /* ขยายกล่องคำอธิบายล่างซ้าย */
-              .absolute.bottom-4 {
-                  bottom: 24px !important;
-                  padding: 12px 20px !important;
-                  font-size: 16px !important; /* ตัวหนังสือใหญ่ชัดเจน */
-                  width: 92% !important;
-              }
-              .absolute.bottom-4 span.w-3\.5 {
-                  width: 18px !important;    /* ขยายจุดวงกลมสีเขียว/แดง */
-                  height: 18px !important;
-              }
-          }
-
+        /* ===== พื้นหลังของหน้าเว็บ =====
+           สีพื้นอ่อนๆ + ลายเหลี่ยมโปร่งแสง (ดูส่วน id="bgFx" ใต้แท็ก <body>)
+           อยากเข้ม/จางลง: ปรับ stop-opacity ใน <linearGradient> ของ bgFx
+           อยากใช้รูปแทน: เปิดบรรทัด background-image ด้านล่าง แล้วลบ div id="bgFx" ออก */
+        body {
+            background-color: #f3f6f7;
+            /* background-image: url('ใส่ลิงก์รูปพื้นหลังตรงนี้'); */
+            /* background-size: cover; background-position: center; background-attachment: fixed; */
+        }
     </style>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800 h-screen flex flex-col overflow-hidden">
+<body class="font-sans text-slate-800" style="min-height:100vh;min-height:100dvh;">
 
-    <!-- Header Navbar ปรับขนาดใหญ่พิเศษสำหรับมือถือ -->
-          <!-- Header Navbar (กะทัดรัดพอดีบนคอม / ขยายใหญ่พอดีนิ้วบนมือถือ) -->
-            <header class="bg-white border-b border-slate-200 px-3 py-2 md:px-5 md:py-2 flex-none flex items-center justify-between shadow-sm z-30 min-h-[56px] md:min-h-[52px]">
-                <div class="flex items-center gap-2.5 md:gap-3 min-w-0">
-                    <!-- ปุ่มเปิด Sidebar -->
-                    <button onclick="toggleSidebar()" class="w-10 h-10 md:w-8 md:h-8 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center transition-all flex-none" title="เปิด/ปิด แถบรายการ">
-                        <i class="fa-solid fa-bars text-lg md:text-sm"></i>
-                    </button>
-                    
-                    <!-- ไอคอนโรงพยาบาล -->
-                    <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base md:text-sm shadow-sm shadow-emerald-200 flex-none">
-                        <i class="fa-solid fa-hospital-user"></i>
-                    </div>
-
-                    <!-- ชื่อระบบ -->
-                    <div class="min-w-0 flex-1">
-                        <h1 class="font-bold text-sm md:text-sm lg:text-base text-slate-800 leading-tight truncate">
-                            แผนที่ตำแหน่งเครื่องทาบบัตรพนักงาน
-                        </h1>
-                        <p class="text-[10px] md:text-xs text-slate-500 font-normal leading-none hidden sm:block">
-                            โรงพยาบาลศิริราช
-                        </p>
-                    </div>
-                </div>
-
-                <!-- ปุ่มป้ายสถานะขวาบน -->
-                <div class="flex items-center flex-none ml-2">
-                    <a href="https://script.google.com/a/macros/mahidol.ac.th/s/AKfycbxuYeQPDYXIbxB6ROxBqL5co1UIuEZ9-amtrfliqVVP99YvoS6bTbf8n7tzc4YjAnLv/exec" target="_blank" rel="noopener noreferrer" 
-                      class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 md:px-3 md:py-1.5 rounded-lg text-xs font-medium shadow-sm transition-all active:scale-95 whitespace-nowrap">
-                        <span>สถานะเครื่อง</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                    </a>
-                </div>
-            </header>
-
-
-    <!-- Main Content Area -->
-    <div class="flex-1 relative overflow-hidden">
-        
-        <!-- Interactive Map Display Area -->
-        <main class="w-full h-full relative bg-slate-200 overflow-hidden flex items-center justify-center">
-            
-            <div class="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col gap-1 bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-lg border border-slate-200">
-                <button onclick="zoomIn()" title="ขยาย" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all">
-                    <i class="fa-solid fa-plus text-sm sm:text-base"></i>
-                </button>
-                <div class="h-px bg-slate-200 my-0.5"></div>
-                <button onclick="zoomOut()" title="ย่อ" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all">
-                    <i class="fa-solid fa-minus text-sm sm:text-base"></i>
-                </button>
-                <div class="h-px bg-slate-200 my-0.5"></div>
-                <button onclick="resetZoom()" title="รีเซ็ตมุมมอง" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all">
-                    <i class="fa-solid fa-rotate-left text-xs sm:text-sm"></i>
-                </button>
-            </div>
-
-            <div id="mapViewport" class="map-viewport w-full h-full relative flex items-center justify-center">
-                <div id="mapContainer" class="relative inline-block origin-center" style="transform: translate(0px, 0px) scale(1);">
-                    <img id="mapImage" src="https://lh3.googleusercontent.com/d/1STtaBl-Y57uJkbrwqhSNDtK8SOGYEWJp" alt="แผนที่โรงพยาบาลศิริราช" class="max-w-none block shadow-2xl rounded-lg pointer-events-none" style="width: 1200px; height: auto;" onerror="handleImageError(this)">
-
-                    <div id="hotspotContainer" class="absolute inset-0">
-                    </div>
-                </div>
-            </div>
-
-            <!-- กล่องคำอธิบายสัญลักษณ์ (วางกึ่งกลางล่าง + ขยายใหญ่พิเศษสำหรับมือถือ) -->
-              <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border-2 border-slate-300 shadow-2xl text-sm sm:text-base text-slate-800 flex items-center justify-center gap-3.5 font-bold w-[92vw] max-w-md">
-                  
-                  <!-- จุดปกติ -->
-                  <div class="flex items-center gap-2 whitespace-nowrap">
-                      <span class="w-4 h-4 rounded-full bg-emerald-600 inline-block border-2 border-white shadow-md flex-none"></span>
-                      <span class="text-slate-900">จุดปกติ</span>
-                  </div>
-
-                  <!-- จุดขัดข้อง -->
-                  <div class="flex items-center gap-2 whitespace-nowrap">
-                      <span class="w-4 h-4 rounded-full inline-block border-2 border-white shadow-md flex-none" style="background-color: #ef4444;"></span>
-                      <span class="text-slate-900">จุดขัดข้อง</span>
-                  </div>
-
-                  <div class="h-4 w-px bg-slate-300 flex-none"></div>
-
-                  <!-- คำแนะนำ -->
-                  <div class="flex items-center gap-1.5 text-slate-700 text-xs sm:text-sm font-semibold whitespace-nowrap">
-                      <i class="fa-solid fa-hand-pointer text-emerald-600 text-sm"></i>
-                      <span>แตะดูรายละเอียด</span>
-                  </div>
-
-              </div>
-              
-        </main>
-
-        <!-- Left Sidebar Directory -->
-        <aside id="sidebar" class="w-full sm:w-80 md:w-96 bg-white/95 backdrop-blur-md border-r border-slate-200/80 flex flex-col absolute inset-y-0 left-0 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl">
-            <div class="p-3.5 border-b border-slate-100 space-y-2.5 bg-slate-50/50">
-                <div class="flex items-center justify-between">
-                    <h2 class="font-bold text-slate-700 text-sm sm:text-base">รายการอาคาร / เครื่องทาบบัตร</h2>
-                    <button onclick="toggleSidebar()" class="w-7 h-7 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
-                </div>
-
-                <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                    <input type="text" id="searchInput" oninput="filterBuildings()" placeholder="ค้นหาชื่ออาคาร, เลขอาคาร..." class="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm transition-all">
-                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                        <i class="fa-solid fa-circle-xmark text-xs"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div id="buildingList" class="flex-1 overflow-y-auto p-2.5 space-y-1.5">
-            </div>
-
-            <div class="p-2.5 bg-slate-100/80 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
-                <span id="resultCount">พบทั้งหมด 0 รายการ</span>
-                <span class="text-emerald-700 font-medium"><i class="fa-solid fa-location-dot"></i> คลิกจุดบนแผนที่</span>
-            </div>
-        </aside>
-
+    <!-- พื้นหลังลายเหลี่ยมโทนเทาอมฟ้า (เคลื่อนที่ช้าๆ ตามการเลื่อนหน้า) -->
+    <div id="bgFx" aria-hidden="true" style="position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;">
+        <div data-parallax="1" style="position:absolute;left:-4%;top:-15%;width:108%;height:130%;will-change:transform;">
+            <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="bgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fb5bb" stop-opacity=".30"/><stop offset="1" stop-color="#cfdcdf" stop-opacity=".06"/></linearGradient>
+                    <linearGradient id="bgB" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8c9cd" stop-opacity=".26"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+                    <linearGradient id="bgC" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#8fa8af" stop-opacity=".22"/><stop offset="1" stop-color="#dde7e9" stop-opacity=".04"/></linearGradient>
+                </defs>
+                <polygon points="0,0 620,0 560,420" fill="url(#bgB)"/>
+                <polygon points="620,0 1320,0 560,420" fill="url(#bgA)"/>
+                <polygon points="1320,0 1060,730 560,420" fill="url(#bgB)"/>
+                <polygon points="0,0 560,420 0,560" fill="url(#bgC)"/>
+                <polygon points="0,560 560,420 380,1000 0,1000" fill="url(#bgA)"/>
+                <polygon points="560,420 380,1000 900,1000" fill="url(#bgB)"/>
+            </svg>
+        </div>
+        <div data-parallax="0.65" style="position:absolute;left:-4%;top:-15%;width:108%;height:130%;will-change:transform;">
+            <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="1100,0 1600,0 1600,380" fill="url(#bgC)" opacity=".7"/>
+                <polygon points="1600,380 1200,520 1600,900" fill="url(#bgA)" opacity=".6"/>
+                <polygon points="700,1000 1250,620 1600,1000" fill="url(#bgB)" opacity=".8"/>
+                <polygon points="200,200 520,60 700,300" fill="url(#bgC)" opacity=".5"/>
+            </svg>
+        </div>
+        <div data-parallax="0.35" style="position:absolute;left:-4%;top:-15%;width:108%;height:130%;will-change:transform;">
+            <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="880,160 1040,300 760,360" fill="url(#bgA)" opacity=".5"/>
+                <polygon points="1380,560 1520,700 1260,760" fill="url(#bgA)" opacity=".5"/>
+                <polygon points="120,720 260,860 40,900" fill="url(#bgA)" opacity=".5"/>
+                <polygon points="980,820 1120,940 860,960" fill="url(#bgA)" opacity=".45"/>
+            </svg>
+        </div>
     </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 w-full bg-white border-b border-slate-200 px-3 py-2 md:px-6 flex-none flex items-center justify-between shadow-sm z-30 min-h-[52px]">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-base md:text-sm shadow-sm flex-none">
+                <i class="fa-solid fa-hospital-user"></i>
+            </div>
+            <div class="min-w-0">
+                <h1 class="font-bold text-sm lg:text-base text-slate-800 leading-tight truncate">แผนที่ตำแหน่งเครื่องทาบบัตรพนักงาน</h1>
+                <p class="text-[10px] md:text-xs text-slate-500 leading-none hidden sm:block">โรงพยาบาลศิริราช</p>
+            </div>
+        </div>
+        <a href="https://script.google.com/a/macros/mahidol.ac.th/s/AKfycbxuYeQPDYXIbxB6ROxBqL5co1UIuEZ9-amtrfliqVVP99YvoS6bTbf8n7tzc4YjAnLv/exec" target="_blank" rel="noopener noreferrer"
+           class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition-all active:scale-95 whitespace-nowrap flex-none ml-2">
+            <span>สถานะเครื่อง</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
+    </header>
+
+    <!-- กรอบเนื้อหา: บน PC จะเว้นระยะซ้าย-ขวา -->
+    <div class="w-full max-w-5xl mx-auto md:shadow-[0_0_18px_rgba(15,23,42,0.07)]">
+
+
+    <!-- ส่วนบน: แผนที่ (ย่อส่วน) -->
+    <section id="mapSection" class="relative flex-none bg-slate-200 border-b border-slate-300 overflow-hidden" style="height:52vh;height:52dvh;">
+
+        <!-- ปุ่มควบคุมแผนที่ -->
+        <div class="absolute top-2 right-2 z-20 flex flex-col gap-0.5 bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-lg border border-slate-200">
+            <button onclick="zoomIn()" title="ขยาย" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all"><i class="fa-solid fa-plus text-sm"></i></button>
+            <button onclick="zoomOut()" title="ย่อ" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all"><i class="fa-solid fa-minus text-sm"></i></button>
+            <button onclick="resetZoom()" title="รีเซ็ตมุมมอง" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all"><i class="fa-solid fa-rotate-left text-xs"></i></button>
+            <button onclick="toggleMapSize()" title="ขยาย/ย่อพื้นที่แผนที่" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all"><i id="expandIcon" class="fa-solid fa-up-right-and-down-left-from-center text-xs"></i></button>
+            <button id="locateBtn" onclick="locateMe()" title="ตำแหน่งของฉัน" class="hidden w-8 h-8 rounded-lg hover:bg-blue-50 text-blue-600 flex items-center justify-center active:scale-95 transition-all"><i class="fa-solid fa-location-crosshairs text-sm"></i></button>
+        </div>
+
+        <div id="mapViewport" class="map-viewport w-full h-full relative flex items-center justify-center">
+            <div id="mapContainer" class="relative flex-none origin-center" style="width:100%;transform:translate(0px,0px) scale(1);">
+                <img id="mapImage" src="https://lh3.googleusercontent.com/d/1STtaBl-Y57uJkbrwqhSNDtK8SOGYEWJp=s0" alt="แผนที่โรงพยาบาลศิริราช"
+                     class="block w-full h-full rounded-md shadow-xl pointer-events-none" draggable="false"
+                     onload="fitMap()" onerror="handleImageError(this)">
+                <div id="hotspotContainer" class="absolute inset-0"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- แถบคำอธิบายสัญลักษณ์ -->
+    <div class="flex-none bg-white border-b border-slate-200 px-3 py-2.5 text-sm sm:text-base text-slate-800 flex items-center gap-4 sm:gap-5 overflow-x-auto whitespace-nowrap">
+        <span class="flex items-center gap-1.5 font-medium"><span class="w-4 h-4 rounded-full bg-emerald-700 border-2 border-white shadow inline-block"></span>ปกติ <b id="cntNormal" class="text-emerald-700">0</b></span>
+        <span class="flex items-center gap-1.5 font-medium"><span class="w-4 h-4 rounded-full border-2 border-white shadow inline-block" style="background:#ef4444"></span>ขัดข้อง <b id="cntOffline" class="text-red-600">0</b></span>
+        <span id="legendUser" class="hidden items-center gap-1.5 font-medium"><span class="w-4 h-4 rounded-full bg-blue-600 border-2 border-white shadow inline-block"></span>คุณอยู่ที่นี่</span>
+        <span class="text-slate-500 flex items-center gap-1.5 ml-auto"><i class="fa-solid fa-hand-pointer text-emerald-600"></i>แตะจุดหรือการ์ดเพื่อดูรายละเอียด</span>
+    </div>
+
+    <!-- ส่วนล่าง: กล่องจุดทาบบัตร -->
+    <section>
+
+        <!-- แถบค้นหา / กรอง / เรียง -->
+        <div class="sticky top-[52px] z-[25] px-3 pt-2.5 pb-2 bg-white border-b border-slate-200 space-y-2">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="searchInput" oninput="filterBuildings()" placeholder="ค้นหาชื่ออาคาร, เลขจุด..."
+                       class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-circle-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2 overflow-x-auto pb-0.5">
+                <button id="gpsBtn" onclick="toggleGPS()" class="hidden flex-none items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 active:scale-95 transition-all whitespace-nowrap">
+                    <i class="fa-solid fa-location-crosshairs"></i><span id="gpsBtnText">เปิดใช้งาน GPS</span>
+                </button>
+
+                <button data-filter="all" onclick="setStatusFilter('all')" class="filter-chip flex-none px-3 py-1.5 rounded-full text-xs font-medium border border-slate-300 bg-white text-slate-600 whitespace-nowrap">ทั้งหมด</button>
+                <button data-filter="normal" onclick="setStatusFilter('normal')" class="filter-chip flex-none px-3 py-1.5 rounded-full text-xs font-medium border border-slate-300 bg-white text-slate-600 whitespace-nowrap">ปกติ</button>
+                <button data-filter="offline" onclick="setStatusFilter('offline')" class="filter-chip flex-none px-3 py-1.5 rounded-full text-xs font-medium border border-slate-300 bg-white text-slate-600 whitespace-nowrap">ขัดข้อง</button>
+
+                <select id="sortSelect" onchange="setSort(this.value)" class="flex-none ml-auto px-2.5 py-1.5 rounded-full text-xs font-medium border border-slate-300 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="number">เรียงตาม: เลขจุด</option>
+                    <option value="name">ชื่อสถานที่ (ก-ฮ)</option>
+                    <option value="nearest" id="optNearest" disabled hidden>ใกล้ที่สุดก่อน</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- รายการการ์ด -->
+        <div id="listScroll" class="p-3">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="font-bold text-slate-700 text-sm sm:text-base inline-block bg-white/85 backdrop-blur px-3 py-1 rounded-full shadow-sm"><i class="fa-solid fa-location-dot text-emerald-600"></i> จุดทาบบัตรทั้งหมด · <span id="resultCount">0</span> จุด</h2>
+            </div>
+            <div id="buildingList" class="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3"></div>
+            <div class="h-6"></div>
+        </div>
+    </section>
+
+    </div><!-- /กรอบเนื้อหา -->
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 translate-y-3 opacity-0 pointer-events-none z-[60] bg-slate-800 text-white text-sm px-4 py-2 rounded-xl shadow-xl max-w-[90vw] text-center"></div>
 
     <!-- Modal Detail Popup -->
     <div id="detailModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop hidden opacity-0 transition-opacity duration-300">
         <div id="modalCard" class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-sm sm:max-w-md w-full overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[85vh]">
-            
-            <!-- Header Modal -->
+
             <div class="relative bg-gradient-to-r from-emerald-700 to-teal-800 text-white p-4 pr-10 flex-none">
                 <button onclick="closeModal()" class="absolute right-3 top-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
-                
                 <div class="flex items-center gap-2 text-emerald-200 text-xs font-semibold uppercase tracking-wider mb-1">
                     <span id="modalCategory" class="bg-emerald-800/80 px-2.5 py-0.5 rounded-full border border-emerald-600/50">หมวดหมู่</span>
                 </div>
                 <h2 id="modalTitle" class="text-base sm:text-lg font-bold leading-tight">ชื่ออาคาร / สถานที่</h2>
             </div>
 
-            <!-- Body Modal -->
             <div class="p-4 overflow-y-auto space-y-3 text-xs sm:text-sm text-slate-600 flex-1">
                 <div class="relative w-full h-44 sm:h-52 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 group">
                     <img id="modalImage" src="" alt="รูปภาพสถานที่" class="w-full h-full object-cover transition-all duration-300">
-                    
                     <button id="prevImgBtn" type="button" onclick="prevImage(event)" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-all active:scale-90 z-10">
                         <i class="fa-solid fa-chevron-left text-xs pointer-events-none"></i>
                     </button>
-                    
                     <button id="nextImgBtn" type="button" onclick="nextImage(event)" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-all active:scale-90 z-10">
                         <i class="fa-solid fa-chevron-right text-xs pointer-events-none"></i>
                     </button>
-
-                    <div id="imageCounter" class="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-sm font-medium z-10">
-                        1/1
-                    </div>
+                    <div id="imageCounter" class="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-sm font-medium z-10">1/1</div>
                 </div>
 
                 <div>
-                    <h3 class="font-semibold text-slate-800 text-xs uppercase tracking-wider text-slate-400 mb-1">รายละเอียด</h3>
-                    <p id="modalDesc" class="text-slate-700 leading-relaxed">รายละเอียดเกี่ยวกับตำแหน่งเครื่องทาบบัตร...</p>
+                    <h3 class="font-semibold text-xs uppercase tracking-wider text-slate-400 mb-1">รายละเอียด</h3>
+                    <p id="modalDesc" class="text-slate-700 leading-relaxed"></p>
                 </div>
             </div>
 
-            <!-- Footer Modal -->
-            <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end flex-none">
-                <button onclick="closeModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-medium transition-all shadow-sm">
-                    ปิดหน้าต่าง
-                </button>
+            <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2 flex-none">
+                <a id="modalNavBtn" href="#" target="_blank" rel="noopener noreferrer" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-medium transition-all shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-diamond-turn-right"></i> นำทางด้วย Google Maps
+                </a>
+                <button onclick="closeModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-medium transition-all shadow-sm">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
@@ -360,362 +310,634 @@ const buildingData = [
     { id: 23, number: "23", name: "SkyWalk (ช่วงประตู 1 / ตึกอุบัติเหตุ)", category: "จุดที่ 23", coords: { x: 18.3, y: 50.4 }, images: ["https://lh3.googleusercontent.com/d/1-p_SGoxta_4qRlLO81JScgksTdOHvqYY", "https://lh3.googleusercontent.com/d/1JNlL2gjIq27YYn_EDoPKC5zJuy3YucaG"], desc: "SkyWalk (ช่วงประตู 1 / ตึกอุบัติเหตุ)", status: "normal" }        
 ];
 
-        let zoomLevel = 1;
-        let panX = 0;
-        let panY = 0;
-        let activeBuildingId = null;
+/* =====================================================================
+   พิกัด GPS ของแต่ละจุด (ไม่บังคับ) — รูปแบบ  id: [ละติจูด, ลองจิจูด]
+   เมื่อใส่พิกัดแล้ว ระบบจะแสดงปุ่ม "เปิดใช้งาน GPS", ระยะทาง, เรียง "ใกล้ที่สุดก่อน"
+   และปุ่มนำทางจะพาไปยังพิกัดจริงบน Google Maps
+   ถ้าใส่พิกัดตั้งแต่ 3 จุดขึ้นไป (ไม่อยู่ในแนวเส้นตรงเดียวกัน) ระบบจะวางจุด "คุณอยู่ที่นี่" บนแผนที่ให้อัตโนมัติ
+   ตัวอย่าง:
+       1: [13.7590, 100.4850],
+       2: [13.7595, 100.4838],
+   ===================================================================== */
+const GPS_COORDS = {
+    // 1: [13.0000, 100.0000],
+};
 
-        let currentImageIndex = 0;
-        let currentImageList = [];
+buildingData.forEach(b => {
+    const c = GPS_COORDS[b.id];
+    b.lat = c ? c[0] : null;
+    b.lng = c ? c[1] : null;
+    b.distance = null;
+});
 
-        const mapViewport = document.getElementById('mapViewport');
-        const mapContainer = document.getElementById('mapContainer');
-        const hotspotContainer = document.getElementById('hotspotContainer');
-        const buildingList = document.getElementById('buildingList');
-        const searchInput = document.getElementById('searchInput');
-        const clearSearchBtn = document.getElementById('clearSearchBtn');
-        const resultCount = document.getElementById('resultCount');
-        const detailModal = document.getElementById('detailModal');
-        const modalCard = document.getElementById('modalCard');
+/* ---------------- สถานะ ---------------- */
+let zoomLevel = 1, panX = 0, panY = 0;
+let baseW = 0, baseH = 0;
+let selectedId = null;
+let statusFilter = 'all';
+let sortMode = 'number';
+let mapExpanded = false;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            renderHotspots();
-            renderBuildingList();
-            initDragAndZoom();
-            fetchSheetDirectly(); // เรียกดึงข้อมูลจาก Google Sheets แบบตรงๆ
+let currentImageIndex = 0;
+let currentImageList = [];
+
+let gpsOn = false, watchId = null, firstFix = true;
+let userPos = null, userXY = null, affine = null;
+
+const mapSection = document.getElementById('mapSection');
+const mapViewport = document.getElementById('mapViewport');
+const mapContainer = document.getElementById('mapContainer');
+const mapImage = document.getElementById('mapImage');
+const hotspotContainer = document.getElementById('hotspotContainer');
+const buildingList = document.getElementById('buildingList');
+const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearchBtn');
+const resultCount = document.getElementById('resultCount');
+const detailModal = document.getElementById('detailModal');
+const modalCard = document.getElementById('modalCard');
+
+window.addEventListener('DOMContentLoaded', () => {
+    initGpsFeature();
+    fitMap();
+    renderAll();
+    initDragAndZoom();
+    fetchSheetDirectly();
+});
+window.addEventListener('resize', () => { fitMap(); });
+
+/* ---------------- ตัวช่วย ---------------- */
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function isOffline(item) {
+    return item.status === 'offline' || item.status === 'error' || item.status === 'ขัดข้อง';
+}
+function hasAnyCoords() {
+    return buildingData.some(b => b.lat != null && b.lng != null);
+}
+function formatDistance(m) {
+    if (m == null) return '';
+    return m < 1000 ? `${Math.round(m)} ม.` : `${(m / 1000).toFixed(1)} กม.`;
+}
+function navUrl(item) {
+    if (item.lat != null && item.lng != null) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&travelmode=walking`;
+    }
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name + ' โรงพยาบาลศิริราช')}`;
+}
+let toastTimer = null;
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.remove('opacity-0', 'translate-y-3');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('opacity-0', 'translate-y-3'), 2800);
+}
+
+/* ---------------- ดึงสถานะจาก Google Sheet ---------------- */
+function fetchSheetDirectly() {
+    const script = document.createElement('script');
+    script.src = SHEET_GVIZ_URL + '&_=' + new Date().getTime();
+    document.body.appendChild(script);
+}
+
+function handleSheetData(data) {
+    try {
+        const rows = data.table.rows;
+        rows.forEach(row => {
+            if (!row.c || !row.c[0]) return;
+            const rawId = String(row.c[0].v || '');                                   // คอลัมน์ A (READER-xxx)
+            const statusText = row.c[2] ? String(row.c[2].v || '').trim().toLowerCase() : ''; // คอลัมน์ C (Status)
+            const numericId = parseInt(rawId.replace(/\D/g, ''), 10);
+            const building = buildingData.find(b => b.id === numericId || b.number === String(numericId));
+            if (building) building.status = statusText;
         });
+        renderAll();
+    } catch (err) {
+        console.error("ประมวลผลข้อมูล Sheet ผิดพลาด:", err);
+    }
+}
 
-        // ดึงข้อมูลจาก Google Sheet ผ่าน JSONP แทรก Script
-        function fetchSheetDirectly() {
-            const script = document.createElement('script');
-            script.src = SHEET_GVIZ_URL + '&_=' + new Date().getTime();
-            document.body.appendChild(script);
+/* ---------------- แสดงผลทั้งหมด ---------------- */
+function getVisible() {
+    const q = searchInput.value.trim().toLowerCase();
+    let list = buildingData.filter(item => {
+        const matchQ = !q || item.name.toLowerCase().includes(q) || item.number.toLowerCase().includes(q) || String(item.category).toLowerCase().includes(q);
+        const off = isOffline(item);
+        const matchS = statusFilter === 'all' || (statusFilter === 'offline' ? off : !off);
+        return matchQ && matchS;
+    });
+    if (sortMode === 'name') {
+        list.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    } else if (sortMode === 'nearest') {
+        list.sort((a, b) => {
+            if (a.distance == null && b.distance == null) return a.id - b.id;
+            if (a.distance == null) return 1;
+            if (b.distance == null) return -1;
+            return a.distance - b.distance;
+        });
+    } else {
+        list.sort((a, b) => a.id - b.id);
+    }
+    return list;
+}
+
+function renderAll() {
+    const offCount = buildingData.filter(isOffline).length;
+    document.getElementById('cntOffline').textContent = offCount;
+    document.getElementById('cntNormal').textContent = buildingData.length - offCount;
+
+    document.querySelectorAll('.filter-chip').forEach(btn => {
+        btn.classList.toggle('chip-active', btn.dataset.filter === statusFilter);
+    });
+
+    const visible = getVisible();
+    renderList(visible);
+    renderHotspots(visible);
+}
+
+function renderList(visible) {
+    resultCount.textContent = visible.length;
+    buildingList.innerHTML = '';
+
+    if (visible.length === 0) {
+        buildingList.innerHTML = `
+            <div class="col-span-full p-8 text-center text-slate-400">
+                <i class="fa-solid fa-magnifying-glass-location text-3xl mb-2 text-slate-300"></i>
+                <h3 class="font-semibold text-slate-500 text-sm">ไม่พบจุดทาบบัตรที่คุณค้นหา</h3>
+                <p class="text-xs mb-3">ลองเปลี่ยนคำค้นหา หรือพิมพ์ชื่อสถานที่อื่นดูนะ</p>
+                <button onclick="resetFilters()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium">ล้างคำค้นหา</button>
+            </div>`;
+        return;
+    }
+
+    // จุดที่อยู่ใกล้ที่สุด (เมื่อมี GPS)
+    let nearestId = null;
+    if (userPos) {
+        const withDist = buildingData.filter(b => b.distance != null);
+        if (withDist.length) nearestId = withDist.reduce((m, b) => b.distance < m.distance ? b : m).id;
+    }
+
+    visible.forEach(item => {
+        const off = isOffline(item);
+        const first = item.images && item.images[0];
+        const hasRealImg = first && !/placehold\.co/.test(first);
+
+        const thumb = `<i class="fa-solid fa-building text-slate-300 text-3xl"></i>` +
+            (hasRealImg ? `<img src="${esc(first)}" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '');
+
+        let tags = '';
+        if (item.id === nearestId) tags += `<span class="px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 text-[10px] font-semibold">ใกล้ที่สุด</span>`;
+        else if (item.distance != null && item.distance < 200) tags += `<span class="px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-700 text-[10px] font-semibold">ใกล้มาก</span>`;
+
+        const distHtml = item.distance != null
+            ? `<span class="ml-auto text-blue-600 font-semibold text-xs whitespace-nowrap"><i class="fa-solid fa-person-walking"></i> ${formatDistance(item.distance)}</span>` : '';
+
+        const card = document.createElement('div');
+        card.id = `card-${item.id}`;
+        card.dataset.id = item.id;
+        card.className = `tap-card bg-white rounded-2xl border border-slate-200 overflow-hidden cursor-pointer hover:border-emerald-300 hover:shadow-md flex flex-col ${selectedId === item.id ? 'selected' : ''}`;
+        card.innerHTML = `
+            <div class="relative h-32 bg-slate-100 flex items-center justify-center overflow-hidden">
+                ${thumb}
+                <span class="absolute top-2 left-2 min-w-[26px] h-[26px] px-1.5 rounded-lg ${off ? 'bg-red-500' : 'bg-emerald-700'} text-white text-xs font-bold flex items-center justify-center shadow">${esc(item.number)}</span>
+            </div>
+            <div class="flex-1 p-2.5 flex flex-col gap-1">
+                <h4 class="font-semibold text-slate-800 text-sm leading-snug line-clamp-2 min-h-[2.5rem]">${esc(item.name)}</h4>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="inline-flex items-center gap-1 text-[11px] ${off ? 'text-red-600' : 'text-emerald-700'} font-medium">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full ${off ? 'bg-red-500' : 'bg-emerald-500'}"></span>${off ? 'ขัดข้อง' : 'ปกติ'}
+                    </span>
+                    ${tags}
+                    ${distHtml}
+                </div>
+            </div>
+            <a data-act="nav" href="${esc(navUrl(item))}" target="_blank" rel="noopener noreferrer" class="py-2 border-t border-slate-100 text-xs font-medium text-blue-600 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"><i class="fa-solid fa-diamond-turn-right"></i> นำทาง</a>`;
+
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('[data-act="nav"]')) return; // ปล่อยให้ลิงก์นำทางทำงานตามปกติ
+            selectBuilding(item.id, { center: true });
+            openModal(item.id);
+        });
+        buildingList.appendChild(card);
+    });
+}
+
+function renderHotspots(visible) {
+    visible = visible || getVisible();
+    const filtering = searchInput.value.trim() !== '' || statusFilter !== 'all';
+    const visibleIds = new Set(visible.map(v => v.id));
+
+    hotspotContainer.innerHTML = '';
+    buildingData.forEach(item => {
+        const off = isOffline(item);
+        const dot = document.createElement('div');
+        dot.className = `hotspot-dot ${selectedId === item.id ? 'active' : ''} ${off ? 'status-warning' : ''} ${filtering && !visibleIds.has(item.id) ? 'dimmed' : ''}`;
+        dot.style.left = `${item.coords.x}%`;
+        dot.style.top = `${item.coords.y}%`;
+        dot.dataset.id = item.id;
+        dot.innerHTML = `${esc(item.number)}<div class="hotspot-label">${esc(item.name)} ${off ? '(ขัดข้อง)' : ''}</div>`;
+
+        dot.addEventListener('mousedown', (e) => e.stopPropagation());
+        dot.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+        dot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectBuilding(item.id);
+            openModal(item.id);
+        });
+        hotspotContainer.appendChild(dot);
+    });
+
+    if (userXY && userXY[0] >= 0 && userXY[0] <= 100 && userXY[1] >= 0 && userXY[1] <= 100) {
+        const u = document.createElement('div');
+        u.className = 'user-dot';
+        u.style.left = `${userXY[0]}%`;
+        u.style.top = `${userXY[1]}%`;
+        u.innerHTML = '<span>คุณอยู่ที่นี่</span>';
+        hotspotContainer.appendChild(u);
+    }
+    updateMapTransform();
+}
+
+/* เลือกจุด: ไฮไลต์บนแผนที่และการ์ดโดยไม่ต้องวาดใหม่ทั้งหมด */
+function selectBuilding(id, opts = {}) {
+    selectedId = id;
+    document.querySelectorAll('.tap-card').forEach(c => c.classList.toggle('selected', Number(c.dataset.id) === id));
+    document.querySelectorAll('.hotspot-dot').forEach(d => d.classList.toggle('active', Number(d.dataset.id) === id));
+    const item = buildingData.find(b => b.id === id);
+    if (item && opts.center) centerOnDot(item.coords.x, item.coords.y);
+    if (opts.scrollList) {
+        const card = document.getElementById(`card-${id}`);
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+/* ---------------- ค้นหา / กรอง / เรียง ---------------- */
+function filterBuildings() {
+    clearSearchBtn.classList.toggle('hidden', searchInput.value.trim().length === 0);
+    renderAll();
+}
+function clearSearch() {
+    searchInput.value = '';
+    clearSearchBtn.classList.add('hidden');
+    renderAll();
+}
+function resetFilters() {
+    searchInput.value = '';
+    clearSearchBtn.classList.add('hidden');
+    statusFilter = 'all';
+    renderAll();
+}
+function setStatusFilter(f) {
+    statusFilter = f;
+    renderAll();
+}
+function setSort(mode) {
+    if (mode === 'nearest' && !userPos) {
+        document.getElementById('sortSelect').value = sortMode;
+        startGPS();
+        return;
+    }
+    sortMode = mode;
+    renderAll();
+}
+
+/* ---------------- แผนที่: ขนาด / ซูม / ลาก ---------------- */
+function fitMap() {
+    const vw = mapViewport.clientWidth, vh = mapViewport.clientHeight;
+    if (!vw || !vh) return;
+    const aspect = (mapImage.naturalWidth && mapImage.naturalHeight) ? mapImage.naturalWidth / mapImage.naturalHeight : 16 / 9;
+    let w = Math.min(vw - 8, (vh - 8) * aspect);
+    w = Math.max(w, 120);
+    baseW = w;
+    baseH = w / aspect;
+    mapContainer.style.width = baseW + 'px';
+    mapContainer.style.height = baseH + 'px';
+    updateMapTransform();
+}
+
+function handleImageError(img) {
+    img.onerror = null;
+    img.src = "https://placehold.co/1200x675/e2e8f0/334155?text=Siriraj+Hospital+Campus+Plan+Map";
+}
+
+function toggleMapSize() {
+    mapExpanded = !mapExpanded;
+    const v = mapExpanded ? 80 : 52;
+    mapSection.style.height = v + 'vh';
+    mapSection.style.height = v + 'dvh';
+    document.getElementById('expandIcon').className = mapExpanded
+        ? 'fa-solid fa-down-left-and-up-right-to-center text-xs'
+        : 'fa-solid fa-up-right-and-down-left-from-center text-xs';
+    fitMap();
+    resetZoom();
+}
+
+function centerOnDot(xPercent, yPercent) {
+    if (zoomLevel < 2) zoomLevel = 2;
+    const dx = (xPercent / 100 - 0.5) * baseW;
+    const dy = (yPercent / 100 - 0.5) * baseH;
+    panX = -dx * zoomLevel;
+    panY = -dy * zoomLevel;
+    updateMapTransform();
+}
+
+function updateMapTransform() {
+    mapContainer.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+}
+
+const MIN_ZOOM = 0.6, MAX_ZOOM = 5;
+function zoomIn()  { zoomLevel = Math.min(zoomLevel + 0.4, MAX_ZOOM); updateMapTransform(); }
+function zoomOut() { zoomLevel = Math.max(zoomLevel - 0.4, MIN_ZOOM); updateMapTransform(); }
+function resetZoom() { zoomLevel = 1; panX = 0; panY = 0; updateMapTransform(); }
+
+function initDragAndZoom() {
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let initialPinchDistance = null;
+    let initialZoom = 1;
+
+    mapViewport.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        isDragging = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        updateMapTransform();
+    });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    mapViewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - panX;
+            startY = e.touches[0].clientY - panY;
+        } else if (e.touches.length === 2) {
+            isDragging = false;
+            initialPinchDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            initialZoom = zoomLevel;
         }
+    }, { passive: false });
 
-        // ฟังก์ชัน Callback รองรับข้อมูลที่ตอบกลับมาจาก Google Sheets
-        function handleSheetData(data) {
-            try {
-                const rows = data.table.rows;
-                rows.forEach(row => {
-                    if (!row.c || !row.c[0]) return;
-                    
-                    const rawId = String(row.c[0].v || ''); // คอลัมน์ A (READER-xxx)
-                    const statusText = row.c[2] ? String(row.c[2].v || '').trim().toLowerCase() : ''; // คอลัมน์ C (Status)
-                    
-                    // แปลง "READER-010" -> 10
-                    const numericId = parseInt(rawId.replace(/\D/g, ''), 10);
-
-                    const building = buildingData.find(b => b.id === numericId || b.number === String(numericId));
-                    if (building) {
-                        building.status = statusText;
-                    }
-                });
-
-                // วาดแผนที่และรายการใหม่หลังอัปเดตสถานะ
-                renderHotspots();
-                renderBuildingList();
-            } catch (err) {
-                console.error("ประมวลผลข้อมูล Sheet ผิดพลาด:", err);
-            }
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('-translate-x-full');
-        }
-
-        function handleImageError(img) {
-            img.src = "https://placehold.co/1200x675/e2e8f0/334155?text=Siriraj+Hospital+Campus+Plan+Map";
-        }
-
-        function renderHotspots() {
-            hotspotContainer.innerHTML = '';
-            buildingData.forEach(item => {
-                const isOffline = item.status === 'offline' || item.status === 'error' || item.status === 'ขัดข้อง';
-                const statusClass = isOffline ? 'status-warning' : '';
-
-                const dot = document.createElement('div');
-                dot.className = `hotspot-dot ${activeBuildingId === item.id ? 'active' : ''} ${statusClass}`;
-                dot.style.left = `${item.coords.x}%`;
-                dot.style.top = `${item.coords.y}%`;
-                dot.setAttribute('data-id', item.id);
-                dot.innerHTML = `
-                    ${item.number}
-                    <div class="hotspot-label">
-                        ${item.name} ${isOffline ? '(ขัดข้อง)' : ''}
-                    </div>
-                `;
-                
-                dot.addEventListener('mousedown', (e) => e.stopPropagation());
-                dot.addEventListener('touchstart', (e) => e.stopPropagation(), {passive: true});
-                
-                dot.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openModal(item.id);
-                });
-
-                hotspotContainer.appendChild(dot);
-            });
-        }
-
-        function renderBuildingList() {
-            const query = searchInput.value.trim().toLowerCase();
-            buildingList.innerHTML = '';
-
-            const filtered = buildingData.filter(item => {
-                return item.name.toLowerCase().includes(query) || item.number.toLowerCase().includes(query);
-            });
-
-            resultCount.textContent = `พบทั้งหมด ${filtered.length} รายการ`;
-
-            if (filtered.length === 0) {
-                buildingList.innerHTML = `
-                    <div class="p-6 text-center text-slate-400">
-                        <i class="fa-solid fa-building-circle-xmark text-2xl mb-1 text-slate-300"></i>
-                        <p class="text-xs">ไม่พบข้อมูลที่ค้นหา</p>
-                    </div>
-                `;
-                return;
-            }
-
-            filtered.forEach(item => {
-                const isOffline = item.status === 'offline' || item.status === 'error' || item.status === 'ขัดข้อง';
-                // ค้นหาบรรทัดนี้ในฟังก์ชัน renderBuildingList()
-                // เดิม: const badgeColor = isOffline ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-red-100 text-red-600 border-red-200';
-
-                // เปลี่ยนเป็น:
-                const badgeColor = isOffline ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200';
-                
-                const card = document.createElement('div');
-                card.className = `p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-2.5 ${activeBuildingId === item.id ? 'bg-emerald-50/80 border-emerald-300 shadow-sm' : 'bg-white border-slate-200/80 hover:border-emerald-300 hover:shadow-sm'}`;
-                card.innerHTML = `
-                    <div class="w-7 h-7 rounded-lg ${badgeColor} font-bold text-xs flex items-center justify-center flex-none border">
-                        ${item.number}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-semibold text-slate-800 text-xs sm:text-sm truncate hover:text-emerald-700">${item.name}</h4>
-                        <p class="text-[10px] text-slate-500 flex items-center gap-1">
-                            <span class="inline-block w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-amber-500' : 'bg-emerald-500'}"></span>
-                            ${item.category} ${isOffline ? '<span class="text-amber-600 font-medium">(ขัดข้อง)</span>' : ''}
-                        </p>
-                    </div>
-                `;
-                card.addEventListener('click', () => {
-                    openModal(item.id);
-                    centerOnDot(item.coords.x, item.coords.y);
-                    if (window.innerWidth < 640) toggleSidebar();
-                });
-                buildingList.appendChild(card);
-            });
-        }
-
-        function centerOnDot(xPercent, yPercent) {
-            const mapWidth = mapContainer.offsetWidth;
-            const mapHeight = mapContainer.offsetHeight;
-
-            const targetX = (mapWidth * (xPercent / 100));
-            const targetY = (mapHeight * (yPercent / 100));
-
-            zoomLevel = 1.4;
-            panX = (mapViewport.offsetWidth / 2) - targetX * zoomLevel;
-            panY = (mapViewport.offsetHeight / 2) - targetY * zoomLevel;
-
+    window.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && isDragging) {
+            panX = e.touches[0].clientX - startX;
+            panY = e.touches[0].clientY - startY;
+            updateMapTransform();
+        } else if (e.touches.length === 2 && initialPinchDistance) {
+            e.preventDefault();
+            const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            zoomLevel = Math.min(Math.max(initialZoom * (d / initialPinchDistance), MIN_ZOOM), MAX_ZOOM);
             updateMapTransform();
         }
+    }, { passive: false });
 
-        function filterBuildings() {
-            clearSearchBtn.classList.toggle('hidden', searchInput.value.trim().length === 0);
-            renderBuildingList();
+    window.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) initialPinchDistance = null;
+        if (e.touches.length === 0) isDragging = false;
+    });
+
+    // เลื่อนล้อเมาส์เหนือแผนที่ = ซูมเข้า/ออก (เลื่อนล้อที่ส่วนอื่นของหน้า = เลื่อนหน้าเว็บตามปกติ)
+    mapViewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        zoomLevel = e.deltaY < 0 ? Math.min(zoomLevel + 0.2, MAX_ZOOM) : Math.max(zoomLevel - 0.2, MIN_ZOOM);
+        updateMapTransform();
+    }, { passive: false });
+}
+
+/* ---------------- GPS / ระยะทาง ---------------- */
+function initGpsFeature() {
+    if (!hasAnyCoords()) return;            // ยังไม่ได้ใส่พิกัด → ซ่อนฟีเจอร์ GPS
+    document.getElementById('gpsBtn').classList.remove('hidden');
+    document.getElementById('gpsBtn').classList.add('flex');
+    document.getElementById('optNearest').disabled = false;
+    document.getElementById('optNearest').hidden = false;
+    affine = buildAffine();
+}
+
+function toggleGPS() { gpsOn ? stopGPS() : startGPS(); }
+
+function startGPS() {
+    if (!hasAnyCoords()) return;
+    if (!navigator.geolocation) { showToast('อุปกรณ์นี้ไม่รองรับ GPS'); return; }
+    if (gpsOn) return;
+    gpsOn = true;
+    firstFix = true;
+    document.getElementById('gpsBtnText').textContent = 'กำลังหาตำแหน่ง...';
+    watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+}
+
+function stopGPS() {
+    if (watchId != null) navigator.geolocation.clearWatch(watchId);
+    watchId = null; gpsOn = false; userPos = null; userXY = null;
+    buildingData.forEach(b => b.distance = null);
+    if (sortMode === 'nearest') { sortMode = 'number'; document.getElementById('sortSelect').value = 'number'; }
+    document.getElementById('gpsBtnText').textContent = 'เปิดใช้งาน GPS';
+    document.getElementById('locateBtn').classList.add('hidden');
+    document.getElementById('legendUser').classList.add('hidden');
+    document.getElementById('legendUser').classList.remove('flex');
+    renderAll();
+}
+
+function onPosition(p) {
+    userPos = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy };
+    buildingData.forEach(b => {
+        b.distance = (b.lat != null && b.lng != null) ? haversine(userPos.lat, userPos.lng, b.lat, b.lng) : null;
+    });
+    userXY = affine ? affine(userPos.lat, userPos.lng) : null;
+
+    document.getElementById('gpsBtnText').textContent = 'GPS เปิดอยู่ (แตะเพื่อปิด)';
+    if (userXY) {
+        document.getElementById('locateBtn').classList.remove('hidden');
+        document.getElementById('legendUser').classList.remove('hidden');
+        document.getElementById('legendUser').classList.add('flex');
+    }
+    if (firstFix) {
+        firstFix = false;
+        sortMode = 'nearest';
+        document.getElementById('sortSelect').value = 'nearest';
+        showToast('อัปเดตพิกัดสำเร็จ — เรียงจุดที่ใกล้คุณที่สุดแล้ว');
+    }
+    renderAll();
+}
+
+function onPositionError(err) {
+    gpsOn = false;
+    watchId = null;
+    document.getElementById('gpsBtnText').textContent = 'เปิดใช้งาน GPS';
+    const msg = err.code === 1 ? 'ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง — โปรดอนุญาตในเบราว์เซอร์'
+              : err.code === 2 ? 'ไม่สามารถระบุตำแหน่งได้ในขณะนี้'
+              : 'หาตำแหน่งนานเกินไป ลองใหม่อีกครั้ง';
+    showToast(msg);
+}
+
+function locateMe() {
+    if (userXY) centerOnDot(userXY[0], userXY[1]);
+    else startGPS();
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/* แปลงพิกัดโลก → ตำแหน่ง % บนรูปแผนที่ ด้วย affine transform (least squares) จากจุดที่มีพิกัด */
+function buildAffine() {
+    const pts = buildingData.filter(b => b.lat != null && b.lng != null);
+    if (pts.length < 3) return null;
+    const lat0 = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+    const lng0 = pts.reduce((s, p) => s + p.lng, 0) / pts.length;
+    const k = Math.cos(lat0 * Math.PI / 180);
+    const toXY = (lat, lng) => [(lng - lng0) * k * 111320, (lat - lat0) * 110540];
+
+    const AtA = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], Atx = [0, 0, 0], Aty = [0, 0, 0];
+    pts.forEach(p => {
+        const [X, Y] = toXY(p.lat, p.lng);
+        const r = [X, Y, 1];
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) AtA[i][j] += r[i] * r[j];
+            Atx[i] += r[i] * p.coords.x;
+            Aty[i] += r[i] * p.coords.y;
         }
+    });
+    const cx = solve3(AtA, Atx), cy = solve3(AtA, Aty);
+    if (!cx || !cy) return null;
+    return (lat, lng) => {
+        const [X, Y] = toXY(lat, lng);
+        return [cx[0] * X + cx[1] * Y + cx[2], cy[0] * X + cy[1] * Y + cy[2]];
+    };
+}
 
-        function clearSearch() {
-            searchInput.value = '';
-            clearSearchBtn.classList.add('hidden');
-            renderBuildingList();
+function solve3(A, b) {
+    const M = A.map((row, i) => [...row, b[i]]);
+    let maxAbs = 0;
+    A.forEach(r => r.forEach(v => { maxAbs = Math.max(maxAbs, Math.abs(v)); }));
+    for (let c = 0; c < 3; c++) {
+        let piv = c;
+        for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
+        if (Math.abs(M[piv][c]) < maxAbs * 1e-9) return null;   // จุดอยู่ในแนวเส้นตรงเดียวกัน / ข้อมูลไม่พอ
+        [M[c], M[piv]] = [M[piv], M[c]];
+        for (let r = c + 1; r < 3; r++) {
+            const f = M[r][c] / M[c][c];
+            for (let j = c; j < 4; j++) M[r][j] -= f * M[c][j];
         }
+    }
+    const x = [0, 0, 0];
+    for (let i = 2; i >= 0; i--) {
+        let s = M[i][3];
+        for (let j = i + 1; j < 3; j++) s -= M[i][j] * x[j];
+        x[i] = s / M[i][i];
+    }
+    return x;
+}
 
-        function openModal(id) {
-            const item = buildingData.find(b => b.id === id);
-            if (!item) return;
+/* ---------------- Modal ---------------- */
+function openModal(id) {
+    const item = buildingData.find(b => b.id === id);
+    if (!item) return;
 
-            activeBuildingId = id;
-            renderHotspots();
-            renderBuildingList();
+    currentImageList = (item.images && item.images.length > 0)
+        ? item.images
+        : [`https://placehold.co/600x400/e2e8f0/475569?text=${encodeURIComponent(item.name)}`];
+    currentImageIndex = 0;
+    updateModalImage();
 
-            currentImageList = (item.images && item.images.length > 0) 
-                ? item.images 
-                : [`https://placehold.co/600x400/e2e8f0/475569?text=${encodeURIComponent(item.name)}`];
-            
-            currentImageIndex = 0;
-            updateModalImage();
+    document.getElementById('modalCategory').textContent = item.category;
+    document.getElementById('modalTitle').textContent = item.name;
+    document.getElementById('modalNavBtn').href = navUrl(item);
 
-            document.getElementById('modalCategory').textContent = item.category;
-            document.getElementById('modalTitle').textContent = item.name;
+    const off = isOffline(item);
+    const statusBox = off
+        ? `<div class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-center gap-2">
+               <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm"></i>
+               <div><strong>สถานะ:</strong> เครื่องทาบบัตรขัดข้อง / ไม่พร้อมใช้งาน</div>
+           </div>`
+        : `<div class="mb-2 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-2">
+               <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+               <div><strong>สถานะ:</strong> ปกติ</div>
+           </div>`;
+    const distLine = item.distance != null
+        ? `<div class="mb-2 text-xs text-blue-600 font-medium"><i class="fa-solid fa-person-walking"></i> ห่างจากคุณประมาณ ${formatDistance(item.distance)}</div>` : '';
 
-            const isOffline = item.status === 'offline' || item.status === 'error' || item.status === 'ขัดข้อง';
-            const statusBox = isOffline 
-                ? `<div class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm"></i>
-                    <div><strong>สถานะ:</strong> เครื่องทาบบัตรขัดข้อง / ไม่พร้อมใช้งาน</div>
-                   </div>`
-                : `<div class="mb-2 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-2">
-                    <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
-                    <div><strong>สถานะ:</strong> ปกติ</div>
-                   </div>`;
+    document.getElementById('modalDesc').innerHTML = statusBox + distLine + esc(item.desc || "ไม่มีรายละเอียดเพิ่มเติม");
 
-            document.getElementById('modalDesc').innerHTML = statusBox + (item.desc || "ไม่มีรายละเอียดเพิ่มเติม");
+    detailModal.classList.remove('hidden');
+    setTimeout(() => {
+        detailModal.classList.remove('opacity-0');
+        modalCard.classList.remove('scale-95');
+        modalCard.classList.add('scale-100');
+    }, 10);
+}
 
-            detailModal.classList.remove('hidden');
-            setTimeout(() => {
-                detailModal.classList.remove('opacity-0');
-                modalCard.classList.remove('scale-95');
-                modalCard.classList.add('scale-100');
-            }, 10);
-        }
+function closeModal() {
+    detailModal.classList.add('opacity-0');
+    modalCard.classList.remove('scale-100');
+    modalCard.classList.add('scale-95');
+    setTimeout(() => detailModal.classList.add('hidden'), 300);
+}
+detailModal.addEventListener('click', (e) => { if (e.target === detailModal) closeModal(); });
 
-        function updateModalImage() {
-            const imgElem = document.getElementById('modalImage');
-            const counterElem = document.getElementById('imageCounter');
-            const prevBtn = document.getElementById('prevImgBtn');
-            const nextBtn = document.getElementById('nextImgBtn');
+function updateModalImage() {
+    const imgElem = document.getElementById('modalImage');
+    const counterElem = document.getElementById('imageCounter');
+    const prevBtn = document.getElementById('prevImgBtn');
+    const nextBtn = document.getElementById('nextImgBtn');
 
-            imgElem.src = currentImageList[currentImageIndex];
-            counterElem.textContent = `${currentImageIndex + 1}/${currentImageList.length}`;
+    imgElem.src = currentImageList[currentImageIndex];
+    counterElem.textContent = `${currentImageIndex + 1}/${currentImageList.length}`;
 
-            if (currentImageList.length <= 1) {
-                prevBtn.style.display = 'none';
-                nextBtn.style.display = 'none';
-                counterElem.style.display = 'none';
-            } else {
-                prevBtn.style.display = 'flex';
-                nextBtn.style.display = 'flex';
-                counterElem.style.display = 'block';
-            }
-        }
+    const multi = currentImageList.length > 1;
+    prevBtn.style.display = multi ? 'flex' : 'none';
+    nextBtn.style.display = multi ? 'flex' : 'none';
+    counterElem.style.display = multi ? 'block' : 'none';
+}
+function nextImage(e) {
+    if (e) e.stopPropagation();
+    if (currentImageList.length <= 1) return;
+    currentImageIndex = (currentImageIndex + 1) % currentImageList.length;
+    updateModalImage();
+}
+function prevImage(e) {
+    if (e) e.stopPropagation();
+    if (currentImageList.length <= 1) return;
+    currentImageIndex = (currentImageIndex - 1 + currentImageList.length) % currentImageList.length;
+    updateModalImage();
+}
 
-        function nextImage(e) {
-            if (e) e.stopPropagation();
-            if (currentImageList.length <= 1) return;
-            currentImageIndex = (currentImageIndex + 1) % currentImageList.length;
-            updateModalImage();
-        }
+/* ---------------- พื้นหลังเคลื่อนไหวตามการเลื่อนหน้า ---------------- */
+(function initBgParallax() {
+    const layers = Array.from(document.querySelectorAll('#bgFx [data-parallax]'));
+    if (!layers.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let cur = 0, running = false;
 
-        function prevImage(e) {
-            if (e) e.stopPropagation();
-            if (currentImageList.length <= 1) return;
-            currentImageIndex = (currentImageIndex - 1 + currentImageList.length) % currentImageList.length;
-            updateModalImage();
-        }
-
-        function closeModal() {
-            detailModal.classList.add('opacity-0');
-            modalCard.classList.remove('scale-100');
-            modalCard.classList.add('scale-95');
-            setTimeout(() => {
-                detailModal.classList.add('hidden');
-                activeBuildingId = null;
-                renderHotspots();
-                renderBuildingList();
-            }, 300);
-        }
-
-        function initDragAndZoom() {
-            let isDragging = false;
-            let startX = 0, startY = 0;
-            let initialPinchDistance = null;
-            let initialZoom = 1;
-
-            mapViewport.addEventListener('mousedown', (e) => {
-                if (e.button !== 0) return;
-                isDragging = true;
-                startX = e.clientX - panX;
-                startY = e.clientY - panY;
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                panX = e.clientX - startX;
-                panY = e.clientY - startY;
-                updateMapTransform();
-            });
-
-            window.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-
-            mapViewport.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    isDragging = true;
-                    startX = e.touches[0].clientX - panX;
-                    startY = e.touches[0].clientY - panY;
-                } else if (e.touches.length === 2) {
-                    isDragging = false;
-                    initialPinchDistance = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    initialZoom = zoomLevel;
-                }
-            }, { passive: false });
-
-            window.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1 && isDragging) {
-                    panX = e.touches[0].clientX - startX;
-                    panY = e.touches[0].clientY - startY;
-                    updateMapTransform();
-                } else if (e.touches.length === 2 && initialPinchDistance) {
-                    e.preventDefault();
-                    const currentDistance = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-                    const scaleFactor = currentDistance / initialPinchDistance;
-                    zoomLevel = Math.min(Math.max(initialZoom * scaleFactor, 0.5), 3.0);
-                    updateMapTransform();
-                }
-            }, { passive: false });
-
-            window.addEventListener('touchend', (e) => {
-                if (e.touches.length < 2) {
-                    initialPinchDistance = null;
-                }
-                if (e.touches.length === 0) {
-                    isDragging = false;
-                }
-            });
-
-            mapViewport.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const zoomFactor = 0.15;
-                if (e.deltaY < 0) {
-                    zoomLevel = Math.min(zoomLevel + zoomFactor, 3.0);
-                } else {
-                    zoomLevel = Math.max(zoomLevel - zoomFactor, 0.5);
-                }
-                updateMapTransform();
-            }, { passive: false });
-        }
-
-        function zoomIn() {
-            zoomLevel = Math.min(zoomLevel + 0.25, 3.0);
-            updateMapTransform();
-        }
-
-        function zoomOut() {
-            zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
-            updateMapTransform();
-        }
-
-        function resetZoom() {
-            zoomLevel = 1;
-            panX = 0;
-            panY = 0;
-            updateMapTransform();
-        }
-
-        function updateMapTransform() {
-            mapContainer.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-        }
+    function progress() {
+        const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        return Math.min(1, Math.max(0, window.scrollY / max));
+    }
+    function frame() {
+        const target = progress();
+        cur += (target - cur) * 0.08;                       // หน่วงให้ลื่นๆ
+        const vh = window.innerHeight, vw = window.innerWidth;
+        layers.forEach((l, idx) => {
+            const s = parseFloat(l.dataset.parallax);
+            const ty = (0.5 - cur) * 0.30 * vh * s;
+            const tx = (cur - 0.5) * 0.06 * vw * s * (idx % 2 ? -1 : 1);
+            l.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0)`;
+        });
+        if (Math.abs(target - cur) > 0.0005) requestAnimationFrame(frame); else running = false;
+    }
+    function kick() { if (!running) { running = true; requestAnimationFrame(frame); } }
+    window.addEventListener('scroll', kick, { passive: true });
+    window.addEventListener('resize', kick);
+    if (window.ResizeObserver) new ResizeObserver(kick).observe(document.body);
+    cur = progress(); kick();
+})();
     </script>
 </body>
 </html>
