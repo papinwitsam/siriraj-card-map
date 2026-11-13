@@ -383,7 +383,7 @@ function navUrl(item) {
     if (item.lat != null && item.lng != null) {
         return `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&travelmode=walking`;
     }
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name + ' โรงพยาบาลศิริราช')}`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.name + ' โรงพยาบาลศิริราช')}&travelmode=walking`;
 }
 let toastTimer = null;
 function showToast(msg) {
