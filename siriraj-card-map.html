@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>แผนที่ตำแหน่งเครื่องทาบบัตร</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Kanit', 'sans-serif'] },
+                    colors: {
+                        siriraj: {
+                            50: '#f0fdf4', 100: '#dcfce7', 500: '#16a34a',
+                            600: '#15803d', 700: '#15803d', 800: '#166534', navy: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        @keyframes pulse-ring {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+        }
+
+        .hotspot-dot {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background-color: #226e01;
+            border: 1px solid #dddddd;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            pointer-events: auto;
+            touch-action: manipulation;
+        }
+
+        /*.hotspot-dot::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background-color: #ef4444;
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+            z-index: -1;
+            pointer-events: none;
+        }*/
+
+        .hotspot-dot:hover, .hotspot-dot.active {
+            background-color: #226e01;
+            transform: translate(-50%, -50%) scale(1.3);
+            z-index: 30;
+            //box-shadow: 0 0 12px rgba(239, 68, 68, 0.8), 0 0 0 3px rgba(255, 255, 255, 0.9);
+        }
+
+        /* จุดสถานะขัดข้อง (สีเหลือง) */
+        .hotspot-dot.status-warning {
+            background-color: #ef4444 !important;
+            border-color: #ffffff !important;
+            color: #f7df02 !important;
+        }
+
+        .hotspot-dot.status-warning::before {
+            background-color: #ef4444 !important;
+        }
+
+        .hotspot-dot.status-warning:hover, .hotspot-dot.status-warning.active {
+            background-color: #ef4444 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 12px rgba(234, 179, 8, 0.8), 0 0 0 3px rgba(255, 255, 255, 0.9);
+        }
+
+        .hotspot-label {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-6px);
+            background: rgba(15, 23, 42, 0.9);
+            color: #ffffff;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .hotspot-dot:hover .hotspot-label, .hotspot-dot.active .hotspot-label {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-10px);
+        }
+
+        .map-viewport { 
+            cursor: grab; 
+            user-select: none; 
+            touch-action: none;
+            overflow: hidden;
+        }
+        .map-viewport:active { cursor: grabbing; }
+        .modal-backdrop { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); }
+
+        /* บังคับขยายขนาด Header และ คำอธิบาย บนหน้าจอมือถือ */
+          @media (max-width: 640px) {
+              /* ขยายความสูงและตัวหนังสือ Header */
+              header {
+                  padding: 12px 16px !important;
+              }
+              header h1 {
+                  font-size: 16px !important; /* ขยายชื่อระบบ */
+              }
+              header button, header div.w-10 {
+                  width: 44px !important;   /* ขยายปุ่มแฮมเบอร์เกอร์และไอคอน */
+                  height: 44px !important;
+              }
+              header a {
+                  font-size: 14px !important; /* ขยายปุ่มขวาบน */
+                  padding: 8px 12px !important;
+              }
+
+              /* ขยายกล่องคำอธิบายล่างซ้าย */
+              .absolute.bottom-4 {
+                  bottom: 24px !important;
+                  padding: 12px 20px !important;
+                  font-size: 16px !important; /* ตัวหนังสือใหญ่ชัดเจน */
+                  width: 92% !important;
+              }
+              .absolute.bottom-4 span.w-3\.5 {
+                  width: 18px !important;    /* ขยายจุดวงกลมสีเขียว/แดง */
+                  height: 18px !important;
+              }
+          }
+
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header Navbar ปรับขนาดใหญ่พิเศษสำหรับมือถือ -->
+          <!-- Header Navbar (กะทัดรัดพอดีบนคอม / ขยายใหญ่พอดีนิ้วบนมือถือ) -->
+            <header class="bg-white border-b border-slate-200 px-3 py-2 md:px-5 md:py-2 flex-none flex items-center justify-between shadow-sm z-30 min-h-[56px] md:min-h-[52px]">
+                <div class="flex items-center gap-2.5 md:gap-3 min-w-0">
+                    <!-- ปุ่มเปิด Sidebar -->
+                    <button onclick="toggleSidebar()" class="w-10 h-10 md:w-8 md:h-8 rounded-lg bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center transition-all flex-none" title="เปิด/ปิด แถบรายการ">
+                        <i class="fa-solid fa-bars text-lg md:text-sm"></i>
+                    </button>
+                    
+                    <!-- ไอคอนโรงพยาบาล -->
+                    <div class="w-9 h-9 md:w-8 md:h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base md:text-sm shadow-sm shadow-emerald-200 flex-none">
+                        <i class="fa-solid fa-hospital-user"></i>
+                    </div>
+
+                    <!-- ชื่อระบบ -->
+                    <div class="min-w-0 flex-1">
+                        <h1 class="font-bold text-sm md:text-sm lg:text-base text-slate-800 leading-tight truncate">
+                            แผนที่ตำแหน่งเครื่องทาบบัตรพนักงาน
+                        </h1>
+                        <p class="text-[10px] md:text-xs text-slate-500 font-normal leading-none hidden sm:block">
+                            โรงพยาบาลศิริราช
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ปุ่มป้ายสถานะขวาบน -->
+                <div class="flex items-center flex-none ml-2">
+                    <a href="https://script.google.com/a/macros/mahidol.ac.th/s/AKfycbxuYeQPDYXIbxB6ROxBqL5co1UIuEZ9-amtrfliqVVP99YvoS6bTbf8n7tzc4YjAnLv/exec" target="_blank" rel="noopener noreferrer" 
+                      class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 md:px-3 md:py-1.5 rounded-lg text-xs font-medium shadow-sm transition-all active:scale-95 whitespace-nowrap">
+                        <span>สถานะเครื่อง</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+            </header>
+
+
+    <!-- Main Content Area -->
+    <div class="flex-1 relative overflow-hidden">
+        
+        <!-- Interactive Map Display Area -->
+        <main class="w-full h-full relative bg-slate-200 overflow-hidden flex items-center justify-center">
+            
+            <div class="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col gap-1 bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-lg border border-slate-200">
+                <button onclick="zoomIn()" title="ขยาย" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all">
+                    <i class="fa-solid fa-plus text-sm sm:text-base"></i>
+                </button>
+                <div class="h-px bg-slate-200 my-0.5"></div>
+                <button onclick="zoomOut()" title="ย่อ" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all">
+                    <i class="fa-solid fa-minus text-sm sm:text-base"></i>
+                </button>
+                <div class="h-px bg-slate-200 my-0.5"></div>
+                <button onclick="resetZoom()" title="รีเซ็ตมุมมอง" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center active:scale-95 transition-all">
+                    <i class="fa-solid fa-rotate-left text-xs sm:text-sm"></i>
+                </button>
+            </div>
+
+            <div id="mapViewport" class="map-viewport w-full h-full relative flex items-center justify-center">
+                <div id="mapContainer" class="relative inline-block origin-center" style="transform: translate(0px, 0px) scale(1);">
+                    <img id="mapImage" src="https://lh3.googleusercontent.com/d/1STtaBl-Y57uJkbrwqhSNDtK8SOGYEWJp" alt="แผนที่โรงพยาบาลศิริราช" class="max-w-none block shadow-2xl rounded-lg pointer-events-none" style="width: 1200px; height: auto;" onerror="handleImageError(this)">
+
+                    <div id="hotspotContainer" class="absolute inset-0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- กล่องคำอธิบายสัญลักษณ์ (วางกึ่งกลางล่าง + ขยายใหญ่พิเศษสำหรับมือถือ) -->
+              <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border-2 border-slate-300 shadow-2xl text-sm sm:text-base text-slate-800 flex items-center justify-center gap-3.5 font-bold w-[92vw] max-w-md">
+                  
+                  <!-- จุดปกติ -->
+                  <div class="flex items-center gap-2 whitespace-nowrap">
+                      <span class="w-4 h-4 rounded-full bg-emerald-600 inline-block border-2 border-white shadow-md flex-none"></span>
+                      <span class="text-slate-900">จุดปกติ</span>
+                  </div>
+
+                  <!-- จุดขัดข้อง -->
+                  <div class="flex items-center gap-2 whitespace-nowrap">
+                      <span class="w-4 h-4 rounded-full inline-block border-2 border-white shadow-md flex-none" style="background-color: #ef4444;"></span>
+                      <span class="text-slate-900">จุดขัดข้อง</span>
+                  </div>
+
+                  <div class="h-4 w-px bg-slate-300 flex-none"></div>
+
+                  <!-- คำแนะนำ -->
+                  <div class="flex items-center gap-1.5 text-slate-700 text-xs sm:text-sm font-semibold whitespace-nowrap">
+                      <i class="fa-solid fa-hand-pointer text-emerald-600 text-sm"></i>
+                      <span>แตะดูรายละเอียด</span>
+                  </div>
+
+              </div>
+              
+        </main>
+
+        <!-- Left Sidebar Directory -->
+        <aside id="sidebar" class="w-full sm:w-80 md:w-96 bg-white/95 backdrop-blur-md border-r border-slate-200/80 flex flex-col absolute inset-y-0 left-0 z-40 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl">
+            <div class="p-3.5 border-b border-slate-100 space-y-2.5 bg-slate-50/50">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-bold text-slate-700 text-sm sm:text-base">รายการอาคาร / เครื่องทาบบัตร</h2>
+                    <button onclick="toggleSidebar()" class="w-7 h-7 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="filterBuildings()" placeholder="ค้นหาชื่ออาคาร, เลขอาคาร..." class="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm transition-all">
+                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        <i class="fa-solid fa-circle-xmark text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="buildingList" class="flex-1 overflow-y-auto p-2.5 space-y-1.5">
+            </div>
+
+            <div class="p-2.5 bg-slate-100/80 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
+                <span id="resultCount">พบทั้งหมด 0 รายการ</span>
+                <span class="text-emerald-700 font-medium"><i class="fa-solid fa-location-dot"></i> คลิกจุดบนแผนที่</span>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Modal Detail Popup -->
+    <div id="detailModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop hidden opacity-0 transition-opacity duration-300">
+        <div id="modalCard" class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-sm sm:max-w-md w-full overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[85vh]">
+            
+            <!-- Header Modal -->
+            <div class="relative bg-gradient-to-r from-emerald-700 to-teal-800 text-white p-4 pr-10 flex-none">
+                <button onclick="closeModal()" class="absolute right-3 top-3 w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+                
+                <div class="flex items-center gap-2 text-emerald-200 text-xs font-semibold uppercase tracking-wider mb-1">
+                    <span id="modalCategory" class="bg-emerald-800/80 px-2.5 py-0.5 rounded-full border border-emerald-600/50">หมวดหมู่</span>
+                </div>
+                <h2 id="modalTitle" class="text-base sm:text-lg font-bold leading-tight">ชื่ออาคาร / สถานที่</h2>
+            </div>
+
+            <!-- Body Modal -->
+            <div class="p-4 overflow-y-auto space-y-3 text-xs sm:text-sm text-slate-600 flex-1">
+                <div class="relative w-full h-44 sm:h-52 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 group">
+                    <img id="modalImage" src="" alt="รูปภาพสถานที่" class="w-full h-full object-cover transition-all duration-300">
+                    
+                    <button id="prevImgBtn" type="button" onclick="prevImage(event)" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-all active:scale-90 z-10">
+                        <i class="fa-solid fa-chevron-left text-xs pointer-events-none"></i>
+                    </button>
+                    
+                    <button id="nextImgBtn" type="button" onclick="nextImage(event)" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-all active:scale-90 z-10">
+                        <i class="fa-solid fa-chevron-right text-xs pointer-events-none"></i>
+                    </button>
+
+                    <div id="imageCounter" class="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-sm font-medium z-10">
+                        1/1
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-slate-800 text-xs uppercase tracking-wider text-slate-400 mb-1">รายละเอียด</h3>
+                    <p id="modalDesc" class="text-slate-700 leading-relaxed">รายละเอียดเกี่ยวกับตำแหน่งเครื่องทาบบัตร...</p>
+                </div>
+            </div>
+
+            <!-- Footer Modal -->
+            <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end flex-none">
+                <button onclick="closeModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-medium transition-all shadow-sm">
+                    ปิดหน้าต่าง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// URL Google Sheet ในรูปแบบ gviz/tq สำหรับดึงข้อมูลทะลุระบบ CORS
+const SHEET_GVIZ_URL = 'https://docs.google.com/spreadsheets/d/1ueSuu1U0sht1I1bxVdt7ZsXLIGWjZpaBLEuESTCeOyo/gviz/tq?tqx=responseHandler:handleSheetData';
+
+const buildingData = [
+    { id: 1, number: "1", name: "ตึกชัยนาทนเรนทรานุสรณ์", category: "จุดที่ 1", coords: { x: 55.8, y: 74.3 }, images: [ "https://placehold.co/600x400/1e293b/ffffff?text=Shooting+in+Progress+1", "https://placehold.co/600x400/0f766e/ffffff?text=Shooting+in+Progress+2" ], desc: "ตึกชัยนาทนเรนทรานุสรณ์", status: "normal" },
+    { id: 2, number: "2", name: "ตึกอัษฎางค์", category: "จุดที่ 2", coords: { x: 40.3, y: 74.6 }, images: ["https://lh3.googleusercontent.com/d/1d1LiWQFBw4no7G53THkrT1LTvlb7QLPu", "https://lh3.googleusercontent.com/d/1lkDDZZobd62n4XzY5S3qdNnqwsVvYQ3U"], desc: "ตึกอัษฎางค์", status: "normal" },
+    { id: 3, number: "3", name: "อาคาร 100 ปี สมเด็จพระศรีนครินทร์", category: "จุดที่ 3", coords: { x: 33.8, y: 65.3 }, images: ["https://lh3.googleusercontent.com/d/1S00SCoorm5EOLfo4r4E7sXbx1hiuM-1Y=s0", "https://lh3.googleusercontent.com/d/1U9Kc_VI8qtop4YAxjMQNNCe_-FNiKk4r=s0"], desc: "อาคาร 100 ปี สมเด็จพระศรีนครินทร์", status: "normal" },
+    { id: 4, number: "4", name: "ตึก 72 ปี", category: "จุดที่ 4", coords: { x: 34.7, y: 52.7 }, images: ["https://lh3.googleusercontent.com/d/1-KLJOm5XLDU9c6ePNTq94fp2HofCNqdT=s0", "https://lh3.googleusercontent.com/d/1aoOWMCgzKKyWgoWnfKq06zikmE3afd6R=s0"], desc: "ตึก 72 ปี", status: "normal" },    
+    { id: 5, number: "5", name: "ตึกกุมารฯ (S&P)", category: "จุดที่ 5", coords: { x: 26.6, y: 58.9 }, images: ["https://lh3.googleusercontent.com/d/1SFjlq3NCycEDS6V37MPp_pbctM567QjB=s0", "https://lh3.googleusercontent.com/d/11wxQ3WVNPS2o4fhgtpWmVdyqXz7l-Q3s=s0"], desc: "", status: "normal" },
+    { id: 6, number: "6", name: "ตึกอานันทมหิดล", category: "จุดที่ 6", coords: { x: 20.3, y: 54.4 }, images: ["https://lh3.googleusercontent.com/d/1SfTmCPDLkhJSzw1KYrMoxgXQtaaWGcuD=s0", "https://lh3.googleusercontent.com/d/1pnnVzjU22HSRhyJ1WNJjSR4lzFNGqQOP=s0"], desc: "ตึกอานันทมหิดล", status: "normal" },
+    { id: 7, number: "7", name: "OPD ใต้ดิน", category: "จุดที่ 7", coords: { x: 12.8, y: 38.6 }, images: ["https://lh3.googleusercontent.com/d/1PXXguoUs6iqChyD3FVxyuf8CzM9TFabi=s0", "https://lh3.googleusercontent.com/d/1CrIbFe5U-JLCNOY800F8l3qnBoMGIzyP=s0"], desc: "OPD ใต้ดิน", status: "normal" },
+    { id: 8, number: "8", name: "OPD คลินิกพิเศษ ชั้น 1", category: "จุดที่ 8", coords: { x: 17.5, y: 41.7 }, images: ["https://lh3.googleusercontent.com/d/1KO0c1AAIbPgDkf-ilfYw2RzkphCKa6--=s0"], desc: "OPD คลินิกพิเศษ ชั้น 1", status: "normal" },
+    { id: 9, number: "9", name: "OPD ฝ่ายเภสัชกรรม", category: "จุดที่ 9", coords: { x: 15.6, y: 36.4 }, images: ["https://lh3.googleusercontent.com/d/1ndLW6zYt-dXC3ZjBke9MVEBcIHCgAngm=s0", "https://lh3.googleusercontent.com/d/1wt6uOUtbdVFWJclJ0cVuJaQ6OcYME609=s0"], desc: "OPD ฝ่ายเภสัชกรรม", status: "normal" },
+    { id: 10, number: "10", name: "ตึกสลากกินแบ่งรัฐบาล", category: "จุดที่ 10", coords: { x: 20.3, y: 21.6 }, images: ["https://placehold.co/600x400/1e293b/ffffff?text=Shooting+in+Progress+1", "https://placehold.co/600x400/0f766e/ffffff?text=Shooting+in+Progress+2"], desc: "ตึกสลากกินแบ่งรัฐบาล", status: "normal" },
+    { id: 11, number: "11", name: "หอพักแพทย์ประจำบ้าน", category: "จุดที่ 11", coords: { x: 23.5, y: 25.0 }, images: ["https://lh3.googleusercontent.com/d/1lyzHX6Yt1QxX715HyLYl0__S8oLnsFB-=s0", "https://lh3.googleusercontent.com/d/1wZ0DmOy75RPo2OgZHIRi72RvodBpoGDk=s0"], desc: "หอพักแพทย์ประจำบ้าน", status: "normal" },
+    { id: 12, number: "12", name: "ตึก 84 ปี", category: "จุดที่ 12", coords: { x: 35.7, y: 40.1 }, images: ["https://lh3.googleusercontent.com/d/1-xWTwW9jlZucHguxzFcHV0BvZkuUA5MG=s0", "https://lh3.googleusercontent.com/d/1-xWTwW9jlZucHguxzFcHV0BvZkuUA5MG=s0"], desc: "ตึก 84 ปี", status: "normal" },
+    { id: 13, number: "13", name: "ตึกสยามินทร์", category: "จุดที่ 13", coords: { x: 40.9, y: 46.7 }, images: ["https://placehold.co/600x400/1e293b/ffffff?text=Shooting+in+Progress+1", "https://placehold.co/600x400/0f766e/ffffff?text=Shooting+in+Progress+2"], desc: "ตึกสยามินทร์", status: "normal" },
+    { id: 14, number: "14", name: "ตึกโภชนาการ", category: "จุดที่ 14", coords: { x: 42.3, y: 30.1 }, images: ["https://lh3.googleusercontent.com/d/13npG_G-StDswKDVekjvVhNi6OXcRnYgX=s0", "https://lh3.googleusercontent.com/d/1pDJZm18MEFcmOHJlNZljNzbAoa5xfsRq=s0"], desc: "ตึกโภชนาการ", status: "normal" },    
+    { id: 15, number: "15", name: "ตึกจุลชีววิทยา", category: "จุดที่ 15", coords: { x: 49.4, y: 38.4 }, images: ["https://lh3.googleusercontent.com/d/1j8e4u1JCmWAVRh6vE7eMp_QULfHSivcY=s0", "https://lh3.googleusercontent.com/d/19y_i2mdKgUI9wLFTokId830bOrUTxqnw=s0"], desc: "ตึกจุลชีววิทยา", status: "normal" },
+    { id: 16, number: "16", name: "ตึกอดุลยเดชวิกรม", category: "จุดที่ 16", coords: { x: 49.4, y: 27.6 }, images: ["https://lh3.googleusercontent.com/d/1V8xn1tk7RGq40PGj8GKOk3O8AzsFXMMQ=s0", "https://lh3.googleusercontent.com/d/139SA_bM6XAR7LFpOwXL_bwwJJsVYhK4t=s0"], desc: "ตึกอดุลยเดชวิกรม", status: "normal" },  
+    { id: 17, number: "17", name: "อาคารฝ่ายเภสัชกรรม", category: "จุดที่ 17", coords: { x: 81.9, y: 38.1 }, images: ["https://lh3.googleusercontent.com/d/1uMUyfdqUYkpoFoGojnElkG9rnaAbWhvr=s0", "https://lh3.googleusercontent.com/d/1l8aBGYOj99zo7_YfpXrHfdoeO-SpTU1G=s0"], desc: "อาคารฝ่ายเภสัชกรรม", status: "normal" },
+    { id: 18, number: "18", name: "อาคารศรีสวรินทิรา", category: "จุดที่ 18", coords: { x: 65.2, y: 37.9 }, images: ["https://placehold.co/600x400/1e293b/ffffff?text=Shooting+in+Progress+1", "https://placehold.co/600x400/0f766e/ffffff?text=Shooting+in+Progress+2"], desc: "อาคารศรีสวรินทิรา", status: "normal" },
+    { id: 19, number: "19", name: "ตึกเฉลิมพระเกียรติฯ", category: "จุดที่ 19", coords: { x: 53.8, y: 54.6 }, images: ["https://lh3.googleusercontent.com/d/1CGlKXtQURCxLGnohdC4-1v_GlrrMnnOt", "https://lh3.googleusercontent.com/d/1WPRYHTwnm6tMYS_6wIwgp-yM9nXf1xht"], desc: "ตึกเฉลิมพระเกียรติฯ", status: "normal" },    
+    { id: 20, number: "20", name: "อาคารเฉลิมพระเกียรติ 80 พรรษาฯ (SiMR)", category: "จุดที่ 20", coords: { x: 64.8, y: 14.4 }, images: ["https://lh3.googleusercontent.com/d/1F98FD8X1sf3mW7o-EWAGPRtWgTIzeE8h", "https://lh3.googleusercontent.com/d/1tmzhcXG8fQpveFhK3TxWb8KfkAwwPBHz"], desc: "อาคารเฉลิมพระเกียรติ 80 พรรษาฯ (SiMR)", status: "normal" },
+    { id: 21, number: "21", name: "SkyWalk (ช่วงประตู 5 / งานบริการผ้า)", category: "จุดที่ 21", coords: { x: 50.2, y: 16.2 }, images: ["https://lh3.googleusercontent.com/d/1p5IC5a2Z0gM7024VHsgobBohAqMFwiFD", "https://lh3.googleusercontent.com/d/1gDO2dmAnX7A17rK6xp4Qi1X9avK4rr_y"], desc: "SkyWalk (ช่วงประตู 5 / งานบริการผ้า)", status: "normal" },
+    { id: 22, number: "22", name: "SkyWalk (ช่วงอาคารศิริราชบำรุงเวช)", category: "จุดที่ 22", coords: { x: 31.6, y: 37.7 }, images: ["https://lh3.googleusercontent.com/d/19kftHaOnGSmv4B4QJRbuwvF7IxwDho5z", "https://lh3.googleusercontent.com/d/111-6zPPjikW6etHuBv_6s1EwA6xP3s6D"], desc: "SkyWalk (ช่วงอาคารศิริราชบำรุงเวช)", status: "normal" },    
+    { id: 23, number: "23", name: "SkyWalk (ช่วงประตู 1 / ตึกอุบัติเหตุ)", category: "จุดที่ 23", coords: { x: 18.3, y: 50.4 }, images: ["https://lh3.googleusercontent.com/d/1-p_SGoxta_4qRlLO81JScgksTdOHvqYY", "https://lh3.googleusercontent.com/d/1JNlL2gjIq27YYn_EDoPKC5zJuy3YucaG"], desc: "SkyWalk (ช่วงประตู 1 / ตึกอุบัติเหตุ)", status: "normal" }        
+];
+
+        let zoomLevel = 1;
+        let panX = 0;
+        let panY = 0;
+        let activeBuildingId = null;
+
+        let currentImageIndex = 0;
+        let currentImageList = [];
+
+        const mapViewport = document.getElementById('mapViewport');
+        const mapContainer = document.getElementById('mapContainer');
+        const hotspotContainer = document.getElementById('hotspotContainer');
+        const buildingList = document.getElementById('buildingList');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const resultCount = document.getElementById('resultCount');
+        const detailModal = document.getElementById('detailModal');
+        const modalCard = document.getElementById('modalCard');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderHotspots();
+            renderBuildingList();
+            initDragAndZoom();
+            fetchSheetDirectly(); // เรียกดึงข้อมูลจาก Google Sheets แบบตรงๆ
+        });
+
+        // ดึงข้อมูลจาก Google Sheet ผ่าน JSONP แทรก Script
+        function fetchSheetDirectly() {
+            const script = document.createElement('script');
+            script.src = SHEET_GVIZ_URL + '&_=' + new Date().getTime();
+            document.body.appendChild(script);
+        }
+
+        // ฟังก์ชัน Callback รองรับข้อมูลที่ตอบกลับมาจาก Google Sheets
+        function handleSheetData(data) {
+            try {
+                const rows = data.table.rows;
+                rows.forEach(row => {
+                    if (!row.c || !row.c[0]) return;
+                    
+                    const rawId = String(row.c[0].v || ''); // คอลัมน์ A (READER-xxx)
+                    const statusText = row.c[2] ? String(row.c[2].v || '').trim().toLowerCase() : ''; // คอลัมน์ C (Status)
+                    
+                    // แปลง "READER-010" -> 10
+                    const numericId = parseInt(rawId.replace(/\D/g, ''), 10);
+
+                    const building = buildingData.find(b => b.id === numericId || b.number === String(numericId));
+                    if (building) {
+                        building.status = statusText;
+                    }
+                });
+
+                // วาดแผนที่และรายการใหม่หลังอัปเดตสถานะ
+                renderHotspots();
+                renderBuildingList();
+            } catch (err) {
+                console.error("ประมวลผลข้อมูล Sheet ผิดพลาด:", err);
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        function handleImageError(img) {
+            img.src = "https://placehold.co/1200x675/e2e8f0/334155?text=Siriraj+Hospital+Campus+Plan+Map";
+        }
+
+        function renderHotspots() {
+            hotspotContainer.innerHTML = '';
+            buildingData.forEach(item => {
+                const isOffline = item.status === 'offline' || item.status === 'error' || item.status === 'ขัดข้อง';
+                const statusClass = isOffline ? 'status-warning' : '';
+
+                const dot = document.createElement('div');
+                dot.className = `hotspot-dot ${activeBuildingId === item.id ? 'active' : ''} ${statusClass}`;
+                dot.style.left = `${item.coords.x}%`;
+                dot.style.top = `${item.coords.y}%`;
+                dot.setAttribute('data-id', item.id);
+                dot.innerHTML = `
+                    ${item.number}
+                    <div class="hotspot-label">
+                        ${item.name} ${isOffline ? '(ขัดข้อง)' : ''}
+                    </div>
+                `;
+                
+                dot.addEventListener('mousedown', (e) => e.stopPropagation());
+                dot.addEventListener('touchstart', (e) => e.stopPropagation(), {passive: true});
+                
+                dot.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openModal(item.id);
+                });
+
+                hotspotContainer.appendChild(dot);
+            });
+        }
+
+        function renderBuildingList() {
+            const query = searchInput.value.trim().toLowerCase();
+            buildingList.innerHTML = '';
+
+            const filtered = buildingData.filter(item => {
+                return item.name.toLowerCase().includes(query) || item.number.toLowerCase().includes(query);
+            });
+
+            resultCount.textContent = `พบทั้งหมด ${filtered.length} รายการ`;
+
+            if (filtered.length === 0) {
+                buildingList.innerHTML = `
+                    <div class="p-6 text-center text-slate-400">
+                        <i class="fa-solid fa-building-circle-xmark text-2xl mb-1 text-slate-300"></i>
+                        <p class="text-xs">ไม่พบข้อมูลที่ค้นหา</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const isOffline = item.status === 'offline' || item.status === 'error' || item.status === 'ขัดข้อง';
+                // ค้นหาบรรทัดนี้ในฟังก์ชัน renderBuildingList()
+                // เดิม: const badgeColor = isOffline ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-red-100 text-red-600 border-red-200';
+
+                // เปลี่ยนเป็น:
+                const badgeColor = isOffline ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200';
+                
+                const card = document.createElement('div');
+                card.className = `p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-2.5 ${activeBuildingId === item.id ? 'bg-emerald-50/80 border-emerald-300 shadow-sm' : 'bg-white border-slate-200/80 hover:border-emerald-300 hover:shadow-sm'}`;
+                card.innerHTML = `
+                    <div class="w-7 h-7 rounded-lg ${badgeColor} font-bold text-xs flex items-center justify-center flex-none border">
+                        ${item.number}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-semibold text-slate-800 text-xs sm:text-sm truncate hover:text-emerald-700">${item.name}</h4>
+                        <p class="text-[10px] text-slate-500 flex items-center gap-1">
+                            <span class="inline-block w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-amber-500' : 'bg-emerald-500'}"></span>
+                            ${item.category} ${isOffline ? '<span class="text-amber-600 font-medium">(ขัดข้อง)</span>' : ''}
+                        </p>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    openModal(item.id);
+                    centerOnDot(item.coords.x, item.coords.y);
+                    if (window.innerWidth < 640) toggleSidebar();
+                });
+                buildingList.appendChild(card);
+            });
+        }
+
+        function centerOnDot(xPercent, yPercent) {
+            const mapWidth = mapContainer.offsetWidth;
+            const mapHeight = mapContainer.offsetHeight;
+
+            const targetX = (mapWidth * (xPercent / 100));
+            const targetY = (mapHeight * (yPercent / 100));
+
+            zoomLevel = 1.4;
+            panX = (mapViewport.offsetWidth / 2) - targetX * zoomLevel;
+            panY = (mapViewport.offsetHeight / 2) - targetY * zoomLevel;
+
+            updateMapTransform();
+        }
+
+        function filterBuildings() {
+            clearSearchBtn.classList.toggle('hidden', searchInput.value.trim().length === 0);
+            renderBuildingList();
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            renderBuildingList();
+        }
+
+        function openModal(id) {
+            const item = buildingData.find(b => b.id === id);
+            if (!item) return;
+
+            activeBuildingId = id;
+            renderHotspots();
+            renderBuildingList();
+
+            currentImageList = (item.images && item.images.length > 0) 
+                ? item.images 
+                : [`https://placehold.co/600x400/e2e8f0/475569?text=${encodeURIComponent(item.name)}`];
+            
+            currentImageIndex = 0;
+            updateModalImage();
+
+            document.getElementById('modalCategory').textContent = item.category;
+            document.getElementById('modalTitle').textContent = item.name;
+
+            const isOffline = item.status === 'offline' || item.status === 'error' || item.status === 'ขัดข้อง';
+            const statusBox = isOffline 
+                ? `<div class="mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm"></i>
+                    <div><strong>สถานะ:</strong> เครื่องทาบบัตรขัดข้อง / ไม่พร้อมใช้งาน</div>
+                   </div>`
+                : `<div class="mb-2 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+                    <div><strong>สถานะ:</strong> ปกติ</div>
+                   </div>`;
+
+            document.getElementById('modalDesc').innerHTML = statusBox + (item.desc || "ไม่มีรายละเอียดเพิ่มเติม");
+
+            detailModal.classList.remove('hidden');
+            setTimeout(() => {
+                detailModal.classList.remove('opacity-0');
+                modalCard.classList.remove('scale-95');
+                modalCard.classList.add('scale-100');
+            }, 10);
+        }
+
+        function updateModalImage() {
+            const imgElem = document.getElementById('modalImage');
+            const counterElem = document.getElementById('imageCounter');
+            const prevBtn = document.getElementById('prevImgBtn');
+            const nextBtn = document.getElementById('nextImgBtn');
+
+            imgElem.src = currentImageList[currentImageIndex];
+            counterElem.textContent = `${currentImageIndex + 1}/${currentImageList.length}`;
+
+            if (currentImageList.length <= 1) {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                counterElem.style.display = 'none';
+            } else {
+                prevBtn.style.display = 'flex';
+                nextBtn.style.display = 'flex';
+                counterElem.style.display = 'block';
+            }
+        }
+
+        function nextImage(e) {
+            if (e) e.stopPropagation();
+            if (currentImageList.length <= 1) return;
+            currentImageIndex = (currentImageIndex + 1) % currentImageList.length;
+            updateModalImage();
+        }
+
+        function prevImage(e) {
+            if (e) e.stopPropagation();
+            if (currentImageList.length <= 1) return;
+            currentImageIndex = (currentImageIndex - 1 + currentImageList.length) % currentImageList.length;
+            updateModalImage();
+        }
+
+        function closeModal() {
+            detailModal.classList.add('opacity-0');
+            modalCard.classList.remove('scale-100');
+            modalCard.classList.add('scale-95');
+            setTimeout(() => {
+                detailModal.classList.add('hidden');
+                activeBuildingId = null;
+                renderHotspots();
+                renderBuildingList();
+            }, 300);
+        }
+
+        function initDragAndZoom() {
+            let isDragging = false;
+            let startX = 0, startY = 0;
+            let initialPinchDistance = null;
+            let initialZoom = 1;
+
+            mapViewport.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                isDragging = true;
+                startX = e.clientX - panX;
+                startY = e.clientY - panY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                panX = e.clientX - startX;
+                panY = e.clientY - startY;
+                updateMapTransform();
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            mapViewport.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    startX = e.touches[0].clientX - panX;
+                    startY = e.touches[0].clientY - panY;
+                } else if (e.touches.length === 2) {
+                    isDragging = false;
+                    initialPinchDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    initialZoom = zoomLevel;
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging) {
+                    panX = e.touches[0].clientX - startX;
+                    panY = e.touches[0].clientY - startY;
+                    updateMapTransform();
+                } else if (e.touches.length === 2 && initialPinchDistance) {
+                    e.preventDefault();
+                    const currentDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const scaleFactor = currentDistance / initialPinchDistance;
+                    zoomLevel = Math.min(Math.max(initialZoom * scaleFactor, 0.5), 3.0);
+                    updateMapTransform();
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    initialPinchDistance = null;
+                }
+                if (e.touches.length === 0) {
+                    isDragging = false;
+                }
+            });
+
+            mapViewport.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = 0.15;
+                if (e.deltaY < 0) {
+                    zoomLevel = Math.min(zoomLevel + zoomFactor, 3.0);
+                } else {
+                    zoomLevel = Math.max(zoomLevel - zoomFactor, 0.5);
+                }
+                updateMapTransform();
+            }, { passive: false });
+        }
+
+        function zoomIn() {
+            zoomLevel = Math.min(zoomLevel + 0.25, 3.0);
+            updateMapTransform();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
+            updateMapTransform();
+        }
+
+        function resetZoom() {
+            zoomLevel = 1;
+            panX = 0;
+            panY = 0;
+            updateMapTransform();
+        }
+
+        function updateMapTransform() {
+            mapContainer.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+        }
+    </script>
+</body>
+</html>
